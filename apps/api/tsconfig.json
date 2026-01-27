@@ -13,16 +13,27 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@lototet/shared": ["../../packages/shared/src/index.ts"],
-      "@lototet/shared/*": ["../../packages/shared/src/*"]
+      "@lototet/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@lototet/shared/*": [
+        "../../packages/shared/src/*"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts"
+  ]
 }
