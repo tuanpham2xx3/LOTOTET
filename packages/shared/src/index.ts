@@ -19,3 +19,5 @@ export * from './schemas';
 
 // Socket.IO events
 export * from './events';
+export { generateTicket } from './ticket';
+export { validateTicket, type ValidationResult } from './ticketValidator';
