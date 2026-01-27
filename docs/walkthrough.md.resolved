@@ -1,0 +1,214 @@
+# Monorepo Setup Walkthrough
+
+## Summary
+
+Successfully restructured the LOTOTET project into a standard monorepo layout with `apps/web`, `apps/api`, and `packages/shared`. All workspace configurations, TypeScript paths, and package linking verified and working correctly.
+
+## Changes Made
+
+### 1. Directory Structure Reorganization
+
+**Before:**
+```
+c:/PROJECT/LOTOTET/
+├── backend/
+├── frontend/
+└── packages/
+    └── shared/
+```
+
+**After:**
+```
+c:/PROJECT/LOTOTET/
+├── apps/
+│   ├── api/          (moved from backend/)
+│   └── web/          (moved from frontend/)
+└── packages/
+    └── shared/
+```
+
+### 2. Configuration Updates
+
+#### [pnpm-workspace.yaml](file:///c:/PROJECT/LOTOTET/pnpm-workspace.yaml)
+Updated workspace packages to use `apps/*` pattern:
+```diff
+packages:
+-   - 'backend'
+-   - 'frontend'
++   - 'apps/*'
+    - 'packages/*'
+```
+
+#### [package.json](file:///c:/PROJECT/LOTOTET/package.json)
+Updated root scripts for consistency with new structure:
+```diff
+"scripts": {
+-   "dev:frontend": "pnpm --filter @lototet/frontend dev",
+-   "dev:backend": "pnpm --filter @lototet/backend start:dev",
++   "dev:web": "pnpm --filter @lototet/frontend dev",
++   "dev:api": "pnpm --filter @lototet/backend start:dev",
+-   "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
++   "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
+-   "build:backend": "pnpm --filter @lototet/backend build",
+-   "build:frontend": "pnpm --filter @lototet/frontend build",
++   "build:api": "pnpm --filter @lototet/backend build",
++   "build:web": "pnpm --filter @lototet/frontend build",
+}
+```
+
+#### [apps/web/tsconfig.json](file:///c:/PROJECT/LOTOTET/apps/web/tsconfig.json)
+Updated extends path and shared package aliases:
+```diff
+{
+-   "extends": "../tsconfig.base.json",
++   "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "paths": {
+-           "@lototet/shared": ["../packages/shared/src/index.ts"],
+-           "@lototet/shared/*": ["../packages/shared/src/*"]
++           "@lototet/shared": ["../../packages/shared/src/index.ts"],
++           "@lototet/shared/*": ["../../packages/shared/src/*"]
+        }
+    }
+}
+```
+
+#### [apps/api/tsconfig.json](file:///c:/PROJECT/LOTOTET/apps/api/tsconfig.json)
+Updated extends path and shared package aliases:
+```diff
+{
+-   "extends": "../tsconfig.base.json",
++   "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "paths": {
+-           "@lototet/shared": ["../packages/shared/src/index.ts"],
+-           "@lototet/shared/*": ["../packages/shared/src/*"]
++           "@lototet/shared": ["../../packages/shared/src/index.ts"],
++           "@lototet/shared/*": ["../../packages/shared/src/*"]
+        }
+    }
+}
+```
+
+#### [apps/api/package.json](file:///c:/PROJECT/LOTOTET/apps/api/package.json)
+Fixed lint script path:
+```diff
+{
+    "scripts": {
+-       "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
++       "lint": "eslint \"src/**/*.ts\" --fix",
+    }
+}
+```
+
+### 3. Files Formatted
+
+Ran Prettier to ensure consistent code style across:
+- `tsconfig.base.json`
+- `docs/phase0/implementation_plan.md`
+- All package.json files
+- Configuration files
+
+## Verification Results
+
+### ✅ Workspace Installation
+```bash
+pnpm install
+```
+**Result:** Successfully resolved all 4 workspace projects:
+- Root package
+- `@lototet/shared`
+- `@lototet/backend` (apps/api)
+- `@lototet/frontend` (apps/web)
+
+### ✅ Package Linking
+Verified that pnpm created proper symlinks:
+```powershell
+Get-Item apps\web\node_modules\@lototet\shared
+```
+**Result:** Junction (symlink) created pointing to `packages/shared`
+
+### ✅ Shared Package Build
+```bash
+pnpm build:shared
+```
+**Result:** TypeScript compilation successful, output in `packages/shared/dist/`
+
+### ✅ Code Formatting
+```bash
+pnpm format:check
+```
+**Result:** All matched files use Prettier code style
+
+### ✅ Final Directory Structure
+```
+c:/PROJECT/LOTOTET/
+├── apps/
+│   ├── api/                    # Backend (NestJS)
+│   │   ├── node_modules/
+│   │   ├── nest-cli.json
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── tsconfig.build.json
+│   └── web/                    # Frontend (Next.js)
+│       ├── src/
+│       ├── node_modules/
+│       ├── next.config.js
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── tailwind.config.js
+│       └── postcss.config.js
+├── packages/
+│   └── shared/                 # Shared types & utilities
+│       ├── src/
+│       ├── dist/              # ✅ Built output
+│       ├── node_modules/
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── jest.config.js
+├── docs/
+├── .eslintrc.js               # ✅ ESLint config
+├── .prettierrc                # ✅ Prettier config
+├── tsconfig.base.json         # ✅ Base TypeScript config
+├── pnpm-workspace.yaml        # ✅ Workspace definition
+└── package.json               # ✅ Root package with scripts
+```
+
+## Available Commands
+
+### Development
+- `pnpm dev:web` - Start Next.js dev server
+- `pnpm dev:api` - Start NestJS dev server
+- `pnpm dev` - Start both concurrently
+
+### Build
+- `pnpm build` - Build all packages
+- `pnpm build:shared` - Build shared package only
+- `pnpm build:api` - Build API only
+- `pnpm build:web` - Build web only
+
+### Quality
+- `pnpm lint` - Lint all packages
+- `pnpm format` - Format all files
+- `pnpm format:check` - Check formatting
+- `pnpm test` - Run all tests
+- `pnpm test:shared` - Test shared package only
+
+## Next Steps
+
+The monorepo structure is now ready for Phase 0 development:
+
+1. ✅ **Monorepo Setup** - Complete
+2. ⏭️ **Contract & Shared Package** - Define types, schemas, and event maps
+3. ⏭️ **Data Models** - Implement game state structures
+4. ⏭️ **Ticket Generator** - Create ticket generation algorithm
+5. ⏭️ **Backend** - Build NestJS + Socket.IO server
+6. ⏭️ **Frontend** - Build Next.js client application
+
+## Notes
+
+- Package names remain as `@lototet/backend` and `@lototet/frontend` to avoid breaking existing dependencies
+- All TypeScript path aliases properly configured and working
+- Workspace symlinks verified and functional
+- Code formatting standardized with Prettier
+- ESLint configured for TypeScript + React
