@@ -9,6 +9,7 @@ import {
     Spectator,
     ErrorCode,
     ErrorPayload,
+    generateTicket,
 } from '@lototet/shared';
 
 export type ServiceResult<T> =
@@ -98,14 +99,21 @@ export class RoomLobbyService {
         const request = room.pendingRequests[requestIndex];
         const playerId = this.roomManager.generatePlayerId();
 
+        // Get unique name to avoid duplicates
+        const uniqueName = this.getUniqueName(room, request.name);
+
+        // Generate ticket immediately so player can view and reroll
+        const ticket = generateTicket();
+
         const player: Player = {
             id: playerId,
             socketId: request.socketId,
-            name: request.name,
+            name: uniqueName,
             balance: request.balance,
             isHost: false,
             status: PlayerStatus.APPROVED,
             ready: false,
+            ticket,
         };
 
         room.players.push(player);
@@ -378,5 +386,28 @@ export class RoomLobbyService {
         this.roomManager.update(roomId, room);
 
         return { roomId, room };
+    }
+
+    // ==================== Private Helpers ====================
+
+    /**
+     * Generate unique name if duplicate exists
+     * Example: "User" -> "User", "User" -> "User_2", "User" -> "User_3"
+     */
+    private getUniqueName(room: RoomState, baseName: string): string {
+        const existingNames = new Set(room.players.map((p) => p.name.toLowerCase()));
+
+        // If name doesn't exist, return as-is
+        if (!existingNames.has(baseName.toLowerCase())) {
+            return baseName;
+        }
+
+        // Find next available suffix
+        let suffix = 2;
+        while (existingNames.has(`${baseName.toLowerCase()}_${suffix}`)) {
+            suffix++;
+        }
+
+        return `${baseName}_${suffix}`;
     }
 }

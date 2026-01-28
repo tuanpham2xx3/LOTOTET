@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RoomState, RoomPhase, Player, PlayerStatus, GameState } from '@lototet/shared';
+import { RoomState, RoomPhase, Player, PlayerStatus, GameState, generateTicket } from '@lototet/shared';
 
 /**
  * In-memory room storage manager
@@ -53,6 +53,7 @@ export class RoomManager {
             isHost: true,
             status: PlayerStatus.APPROVED,
             ready: false,
+            ticket: generateTicket(), // Generate ticket immediately
         };
 
         const room: RoomState = {

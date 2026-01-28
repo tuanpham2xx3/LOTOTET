@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOTOTET - Socket.IO Tester</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --card: #1a1a2e;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warn: #f59e0b;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--accent), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tester-id-banner {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.2));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+        }
+
+        .tester-id-banner .label {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .tester-id-banner .id {
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+            color: var(--accent);
+            letter-spacing: 2px;
+        }
+
+        .tester-id-banner .socket-id {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--accent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .status.connected {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warn {
+            background: var(--warn);
+            color: black;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 3px solid;
+        }
+
+        .log-entry.send {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent);
+        }
+
+        .log-entry.receive {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
+        }
+
+        .log-entry.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--error);
+        }
+
+        .log-time {
+            color: var(--text-dim);
+        }
+
+        .log-event {
+            font-weight: bold;
+        }
+
+        .state-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .info-box {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 15px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Tester ID Banner -->
+    <div class="tester-id-banner">
+        <div class="label">🎮 TESTER ID (persists on refresh)</div>
+        <div class="id" id="testerId">-</div>
+        <div class="socket-id">Socket ID: <span id="socketIdDisplay">Not connected</span></div>
+    </div>
+
+    <h1>🎲 LOTOTET Socket.IO Tester</h1>
+
+    <div class="container">
+        <!-- Connection Panel -->
+        <div class="panel">
+            <h2>🔌 Connection</h2>
+            <div id="statusBadge" class="status disconnected">
+                <span class="dot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <div>
+                <label>Server URL</label>
+                <input type="text" id="serverUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="connect()">Connect</button>
+                <button class="btn-secondary" onclick="disconnect()">Disconnect</button>
+                <button class="btn-danger" onclick="resetSession()">Reset Session</button>
+            </div>
+        </div>
+
+        <!-- Create Room (Host Only) -->
+        <div class="panel">
+            <h2>👑 Create Room (Host)</h2>
+            <div class="info-box">
+                <strong>Room ID:</strong> <span id="currentRoomId">-</span><br>
+                <strong>Role:</strong> <span id="currentRole">-</span>
+            </div>
+            <div>
+                <label>My Player ID (auto-filled after create/join)</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="myPlayerId" placeholder="player_xxx" style="flex: 1; margin-bottom: 0;"
+                        readonly>
+                    <button class="btn-secondary" onclick="copyPlayerId()" style="padding: 10px;">📋</button>
+                </div>
+            </div>
+            <div class="btn-group" style="margin-top: 15px;">
+                <button class="btn-primary" onclick="createRoom()" style="width: 100%;">🏠 Create New Room</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 8px;">
+                Tạo phòng mới → Bạn là Host
+            </p>
+        </div>
+
+        <!-- Join/Spectate Room -->
+        <div class="panel">
+            <h2>🚪 Join Room</h2>
+            <div>
+                <label>Room ID để Join/Spectate</label>
+                <input type="text" id="roomIdInput" placeholder="ABC123">
+            </div>
+            <div>
+                <label>Tên của bạn</label>
+                <input type="text" id="playerName" value="Tester" placeholder="Your name">
+            </div>
+            <div>
+                <label>Số dư</label>
+                <input type="number" id="playerBalance" value="100000" placeholder="100000">
+            </div>
+            <div class="btn-group">
+                <button class="btn-success" onclick="spectateRoom()" style="flex: 1;">👁️ Spectate (Xem)</button>
+                <button class="btn-warn" onclick="joinRoom()" style="flex: 1;">🎮 Join Request</button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-dim); margin-top: 8px;">
+                <strong>Spectate:</strong> Xem phòng mà không tham gia<br>
+                <strong>Join Request:</strong> Gửi yêu cầu tham gia → Host duyệt → Thành player
+            </p>
+            <hr>
+            <p style="font-size: 12px; color: var(--accent);">Đang spectate? Chuyển thành player:</p>
+            <div class="btn-group">
+                <button class="btn-success" onclick="spectatorRequestJoin()" style="width: 100%;">Spectator → Join
+                    Request</button>
+            </div>
+        </div>
+
+        <!-- Player Game Actions -->
+        <div class="panel">
+            <h2>🎮 Player Actions</h2>
+            <div class="info-box">
+                <strong>My Player ID:</strong> <span id="playerIdDisplay">-</span><br>
+                <strong>Status:</strong> <span id="playerStatusDisplay">-</span><br>
+                <strong>Ready:</strong> <span id="playerReadyDisplay">-</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn-secondary" onclick="ticketReroll()">🔄 Reroll Ticket</button>
+                <button class="btn-success" onclick="ticketSaveReady()">✅ Ready</button>
+            </div>
+            <hr>
+            <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 10px;">🎟️ My Ticket</h3>
+            <div id="ticketGrid"
+                style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; font-size: 11px; font-family: monospace;">
+                <!-- Will be filled by JS -->
+                <div
+                    style="text-align: center; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; color: var(--text-dim);">
+                    -</div>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: var(--text-dim);">
+                <span
+                    style="display: inline-block; width: 12px; height: 12px; background: var(--success); border-radius: 2px; vertical-align: middle;"></span>
+                = Đã đánh dấu
+            </div>
+        </div>
+
+
+        <!-- Host Actions -->
+        <div class="panel">
+            <h2>👑 Host Actions</h2>
+            <div>
+                <label>Bet Amount</label>
+                <input type="number" id="betAmount" value="10000" placeholder="10000">
+                <button class="btn-primary" onclick="setBetAmount()">Set Bet</button>
+            </div>
+            <div>
+                <label>Request ID to Approve</label>
+                <input type="text" id="requestIdInput" placeholder="req_xxx">
+            </div>
+            <div class="btn-group">
+                <button class="btn-success" onclick="approveJoin()">✅ Approve</button>
+                <button class="btn-secondary" onclick="rejectJoin()">❌ Reject</button>
+            </div>
+            <hr>
+            <h3 style="font-size: 13px; color: var(--text-dim); margin-bottom: 10px;">Update Player Balance</h3>
+            <div>
+                <label>Target Player ID</label>
+                <input type="text" id="targetPlayerId" placeholder="player_xxx">
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <div style="flex: 1;">
+                    <label>New Balance</label>
+                    <input type="number" id="newBalance" value="100000" placeholder="100000">
+                </div>
+                <button class="btn-primary" onclick="updateBalance()"
+                    style="align-self: flex-end; margin-bottom: 10px;">Update</button>
+            </div>
+            <hr>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="gameStart()">🚀 Start Game</button>
+                <button class="btn-warn" onclick="turnDraw()">🎱 Draw Number</button>
+                <button class="btn-secondary" onclick="gameRestart()">🔄 Restart</button>
+            </div>
+        </div>
+
+        <!-- Game Actions -->
+        <div class="panel">
+            <h2>🎯 Turn Actions</h2>
+            <div>
+                <label>Turn ID</label>
+                <input type="number" id="turnId" value="1" placeholder="1">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label>Row (0-8)</label>
+                    <input type="number" id="markRow" value="0" min="0" max="8">
+                </div>
+                <div>
+                    <label>Col (0-8)</label>
+                    <input type="number" id="markCol" value="0" min="0" max="8">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-success" onclick="turnMark()">✓ Mark Cell</button>
+                <button class="btn-secondary" onclick="turnNoNumber()">✗ No Number</button>
+                <button class="btn-warn" onclick="bingoClaim()">🎉 BINGO!</button>
+            </div>
+        </div>
+
+        <!-- Room State -->
+        <div class="panel">
+            <h2>📊 Room State</h2>
+            <div id="roomState" class="state-display">No state received yet...</div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="panel full-width">
+            <h2>📝 Event Log
+                <button class="btn-secondary" style="float:right; padding: 4px 8px; font-size: 11px;"
+                    onclick="clearLog()">Clear</button>
+            </h2>
+            <div id="eventLog" class="log-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Session Management ====================
+        const SESSION_KEY = 'lototet_tester_session';
+
+        function generateTesterId() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            return 'T-' + Array.from({ length: 6 }, () =>
+                chars[Math.floor(Math.random() * chars.length)]
+            ).join('');
+        }
+
+        function getSession() {
+            const saved = sessionStorage.getItem(SESSION_KEY);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            // Create new session
+            const session = {
+                testerId: generateTesterId(),
+                serverUrl: 'http://localhost:3000',
+                roomId: null,
+                role: null,
+                playerId: null,
+                playerName: 'Tester',
+                playerBalance: 100000,
+            };
+            saveSession(session);
+            return session;
+        }
+
+        function saveSession(session) {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        }
+
+        function updateSession(updates) {
+            const session = getSession();
+            Object.assign(session, updates);
+            saveSession(session);
+            return session;
+        }
+
+        function resetSession() {
+            sessionStorage.removeItem(SESSION_KEY);
+            location.reload();
+        }
+
+        // ==================== Socket Management ====================
+        let socket = null;
+        let session = getSession();
+
+        function log(type, event, data) {
+            const container = document.getElementById('eventLog');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-event">${type === 'send' ? '→' : '←'} ${event}</span>
+                <pre style="margin-top: 4px; font-size: 11px; color: #94a3b8;">${JSON.stringify(data, null, 2)}</pre>
+            `;
+            container.insertBefore(entry, container.firstChild);
+        }
+
+        function clearLog() {
+            document.getElementById('eventLog').innerHTML = '';
+        }
+
+        function updateStatus(connected) {
+            const badge = document.getElementById('statusBadge');
+            const text = document.getElementById('statusText');
+            badge.className = `status ${connected ? 'connected' : 'disconnected'}`;
+            text.textContent = connected ? 'Connected' : 'Disconnected';
+
+            if (!connected) {
+                document.getElementById('socketIdDisplay').textContent = 'Not connected';
+            }
+        }
+
+        function updateRoomInfo(roomId, role, playerId) {
+            document.getElementById('currentRoomId').textContent = roomId || '-';
+            document.getElementById('currentRole').textContent = role || '-';
+            document.getElementById('currentPlayerId').textContent = playerId || '-';
+            updateSession({ roomId, role, playerId });
+        }
+
+        function connect() {
+            const url = document.getElementById('serverUrl').value;
+            updateSession({ serverUrl: url });
+
+            socket = io(url, { transports: ['websocket'] });
+
+            socket.on('connect', () => {
+                updateStatus(true);
+                document.getElementById('socketIdDisplay').textContent = socket.id;
+                log('receive', 'connect', { socketId: socket.id, testerId: session.testerId });
+
+                // Auto-rejoin room if we had one
+                if (session.roomId && session.role === 'Spectator') {
+                    spectateRoom(session.roomId);
+                }
+            });
+
+            socket.on('disconnect', () => {
+                updateStatus(false);
+                log('receive', 'disconnect', {});
+            });
+
+            socket.on('room:state', (state) => {
+                log('receive', 'room:state', state);
+                document.getElementById('roomState').textContent = JSON.stringify(state, null, 2);
+
+                // Update turn ID from state
+                if (state.game?.turnId) {
+                    document.getElementById('turnId').value = state.game.turnId;
+                }
+
+                // Find my player ID from state
+                const myPlayer = state.players?.find(p => p.socketId === socket?.id);
+                if (myPlayer) {
+                    updateSession({ playerId: myPlayer.id, role: myPlayer.isHost ? 'Host' : 'Player' });
+                    document.getElementById('myPlayerId').value = myPlayer.id;
+                    document.getElementById('currentRole').textContent = myPlayer.isHost ? 'Host' : 'Player';
+
+                    // Update Player Actions panel
+                    document.getElementById('playerIdDisplay').textContent = myPlayer.id;
+                    document.getElementById('playerStatusDisplay').textContent = myPlayer.status || '-';
+                    document.getElementById('playerReadyDisplay').textContent = myPlayer.ready ? '✅ Yes' : '❌ No';
+
+                    // Render ticket grid
+                    renderTicketGrid(myPlayer.ticket, myPlayer.marked);
+
+                    // If I'm host and there are other players, fill target player ID with first non-host player
+                    if (myPlayer.isHost && state.players.length > 1) {
+                        const otherPlayer = state.players.find(p => !p.isHost);
+                        if (otherPlayer && !document.getElementById('targetPlayerId').value) {
+                            document.getElementById('targetPlayerId').value = otherPlayer.id;
+                        }
+                    }
+                } else {
+                    // Not a player yet (spectator or pending)
+                    document.getElementById('playerIdDisplay').textContent = '-';
+                    document.getElementById('playerStatusDisplay').textContent = 'Not a player';
+                    document.getElementById('playerReadyDisplay').textContent = '-';
+                    renderTicketGrid(null, null);
+                }
+
+                // Auto-fill request ID if there are pending requests
+                if (state.pendingRequests?.length > 0) {
+                    document.getElementById('requestIdInput').value = state.pendingRequests[0].requestId;
+                }
+            });
+
+            socket.on('turn:new', (data) => {
+                log('receive', 'turn:new', data);
+                document.getElementById('turnId').value = data.turnId;
+            });
+            socket.on('turn:progress', (data) => log('receive', 'turn:progress', data));
+            socket.on('waiting:update', (data) => log('receive', 'waiting:update', data));
+            socket.on('game:ended', (data) => log('receive', 'game:ended', data));
+            socket.on('error', (data) => log('error', 'error', data));
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+        }
+
+        function emit(event, payload, callback) {
+            if (!socket?.connected) {
+                alert('Not connected!');
+                return;
+            }
+            log('send', event, payload);
+            if (callback) {
+                socket.emit(event, payload, callback);
+            } else if (payload !== undefined) {
+                socket.emit(event, payload);
+            } else {
+                socket.emit(event);
+            }
+        }
+
+        // ==================== Room Actions ====================
+        function createRoom() {
+            emit('room:create', undefined, (res) => {
+                log('receive', 'room:create callback', res);
+                if (res.roomId) {
+                    updateRoomInfo(res.roomId, 'Host', null);
+                    document.getElementById('roomIdInput').value = res.roomId;
+                }
+            });
+        }
+
+        function spectateRoom(roomIdOverride) {
+            const roomId = roomIdOverride || document.getElementById('roomIdInput').value;
+            emit('room:spectate', { roomId }, (res) => {
+                log('receive', 'room:spectate callback', res);
+                if (res.success) {
+                    updateRoomInfo(roomId, 'Spectator', null);
+                }
+            });
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('roomIdInput').value;
+            const name = document.getElementById('playerName').value;
+            const balance = parseInt(document.getElementById('playerBalance').value);
+            updateSession({ playerName: name, playerBalance: balance });
+
+            emit('room:join', { roomId, name, balance }, (res) => {
+                log('receive', 'room:join callback', res);
+                if (res.success) {
+                    updateRoomInfo(roomId, 'Pending', null);
+                }
+            });
+        }
+
+        function spectatorRequestJoin() {
+            const name = document.getElementById('playerName').value;
+            const balance = parseInt(document.getElementById('playerBalance').value);
+            updateSession({ playerName: name, playerBalance: balance });
+
+            emit('spectator:requestJoin', { name, balance }, (res) => {
+                log('receive', 'spectator:requestJoin callback', res);
+                if (res.success) {
+                    document.getElementById('currentRole').textContent = 'Pending (was Spectator)';
+                }
+            });
+        }
+
+        // ==================== Host Actions ====================
+        function setBetAmount() {
+            const amount = parseInt(document.getElementById('betAmount').value);
+            emit('room:setBetAmount', { amount });
+        }
+
+        function approveJoin() {
+            const requestId = document.getElementById('requestIdInput').value;
+            emit('room:approveJoin', { requestId });
+        }
+
+        function rejectJoin() {
+            const requestId = document.getElementById('requestIdInput').value;
+            emit('room:rejectJoin', { requestId });
+        }
+
+        function updateBalance() {
+            const playerId = document.getElementById('targetPlayerId').value;
+            const balance = parseInt(document.getElementById('newBalance').value);
+            if (!playerId) {
+                alert('Please enter Target Player ID');
+                return;
+            }
+            emit('room:updateBalance', { playerId, balance });
+        }
+
+        function copyPlayerId() {
+            const playerId = document.getElementById('myPlayerId').value;
+            if (playerId) {
+                navigator.clipboard.writeText(playerId);
+                alert('Copied: ' + playerId);
+            }
+        }
+
+        function gameStart() {
+            emit('game:start');
+        }
+
+        function gameRestart() {
+            emit('game:restart');
+        }
+
+        function turnDraw() {
+            emit('turn:draw');
+        }
+
+        // ==================== Player Actions ====================
+        function ticketReroll() {
+            emit('ticket:reroll');
+        }
+
+        function ticketSaveReady() {
+            emit('ticket:saveReady');
+        }
+
+        function turnMark() {
+            const turnId = parseInt(document.getElementById('turnId').value);
+            const row = parseInt(document.getElementById('markRow').value);
+            const col = parseInt(document.getElementById('markCol').value);
+            emit('turn:mark', { turnId, row, col });
+        }
+
+        function turnNoNumber() {
+            const turnId = parseInt(document.getElementById('turnId').value);
+            emit('turn:noNumber', { turnId });
+        }
+
+        function bingoClaim() {
+            emit('game:bingoClaim');
+        }
+
+        // ==================== Ticket Grid Rendering ====================
+        function renderTicketGrid(ticket, marked) {
+            const container = document.getElementById('ticketGrid');
+
+            if (!ticket || !Array.isArray(ticket)) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-dim);">No ticket yet (game not started or not a player)</div>';
+                return;
+            }
+
+            let html = '';
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const value = ticket[row]?.[col];
+                    const isMarked = marked?.[row]?.[col] === true;
+
+                    let bgColor = 'rgba(255,255,255,0.05)';
+                    let textColor = 'var(--text)';
+
+                    if (value === 0 || value === null || value === undefined) {
+                        // Empty cell
+                        bgColor = 'rgba(0,0,0,0.2)';
+                        textColor = 'var(--text-dim)';
+                    } else if (isMarked) {
+                        // Marked cell
+                        bgColor = 'var(--success)';
+                        textColor = 'white';
+                    }
+
+                    const displayValue = (value === 0 || value === null || value === undefined) ? '' : value;
+
+                    html += `<div style="
+                        text-align: center; 
+                        padding: 6px 2px; 
+                        background: ${bgColor}; 
+                        border-radius: 4px; 
+                        color: ${textColor};
+                        font-weight: ${isMarked ? 'bold' : 'normal'};
+                        cursor: pointer;
+                    " onclick="quickMark(${row}, ${col})" title="Row: ${row}, Col: ${col}">${displayValue}</div>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function quickMark(row, col) {
+            const turnId = parseInt(document.getElementById('turnId').value);
+            document.getElementById('markRow').value = row;
+            document.getElementById('markCol').value = col;
+            // Auto-send mark
+            emit('turn:mark', { turnId, row, col });
+        }
+
+        // ==================== Init ====================
+        function init() {
+            // Display tester ID
+            document.getElementById('testerId').textContent = session.testerId;
+
+            // Restore session values
+            document.getElementById('serverUrl').value = session.serverUrl;
+            if (session.roomId) {
+                document.getElementById('roomIdInput').value = session.roomId;
+                document.getElementById('currentRoomId').textContent = session.roomId;
+            }
+            if (session.role) {
+                document.getElementById('currentRole').textContent = session.role;
+            }
+            if (session.playerId) {
+                document.getElementById('myPlayerId').value = session.playerId;
+            }
+            document.getElementById('playerName').value = session.playerName || 'Tester';
+            document.getElementById('playerBalance').value = session.playerBalance || 100000;
+
+            // Auto-connect
+            connect();
+        }
+
+        // Run on page load
+        init();
+    </script>
+</body>
+
+</html>

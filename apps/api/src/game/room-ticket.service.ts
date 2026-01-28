@@ -17,6 +17,7 @@ export class RoomTicketService {
 
     /**
      * Start ticket pick phase (host only)
+     * Tickets are already generated when player is approved
      */
     startTicketPick(roomId: string, hostSocketId: string): ServiceResult<void> {
         const room = this.roomManager.get(roomId);
@@ -42,9 +43,11 @@ export class RoomTicketService {
             };
         }
 
-        // Generate tickets for all players
+        // Ensure all players have tickets (in case any missed during approve)
         for (const player of room.players) {
-            player.ticket = generateTicket();
+            if (!player.ticket) {
+                player.ticket = generateTicket();
+            }
             player.ready = false;
         }
 
@@ -55,7 +58,7 @@ export class RoomTicketService {
     }
 
     /**
-     * Reroll ticket for a player
+     * Reroll ticket for a player (allowed in LOBBY or TICKET_PICK phase, but not if ready)
      */
     rerollTicket(roomId: string, socketId: string): ServiceResult<void> {
         const room = this.roomManager.get(roomId);
@@ -67,10 +70,11 @@ export class RoomTicketService {
             };
         }
 
-        if (room.phase !== RoomPhase.TICKET_PICK) {
+        // Allow reroll in LOBBY or TICKET_PICK phase
+        if (room.phase !== RoomPhase.LOBBY && room.phase !== RoomPhase.TICKET_PICK) {
             return {
                 success: false,
-                error: { code: ErrorCode.INVALID_PHASE, message: 'Not in ticket pick phase' },
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Cannot reroll after game started' },
             };
         }
 
@@ -83,8 +87,15 @@ export class RoomTicketService {
             };
         }
 
+        // Block reroll if player is already ready
+        if (player.ready) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ALREADY_RESPONDED, message: 'Cannot reroll after ready' },
+            };
+        }
+
         player.ticket = generateTicket();
-        player.ready = false;
         this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
