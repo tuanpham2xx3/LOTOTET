@@ -84,10 +84,6 @@ export class RoomService {
 
     // ==================== Ticket Operations (delegated) ====================
 
-    startTicketPick(roomId: string, hostSocketId: string) {
-        return this.ticketService.startTicketPick(roomId, hostSocketId);
-    }
-
     rerollTicket(roomId: string, socketId: string) {
         return this.ticketService.rerollTicket(roomId, socketId);
     }

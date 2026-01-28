@@ -362,23 +362,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        // First start ticket pick phase
-        const room = this.roomService.getRoom(roomId);
-        if (room?.phase === 'LOBBY') {
-            const ticketResult = this.roomService.startTicketPick(roomId, client.id);
-            if (ticketResult.success) {
-                this.broadcastRoomState(roomId);
-            } else {
-                return this.sendError(client, ticketResult.error.code, ticketResult.error.message);
-            }
+        // Start game directly from LOBBY (all players must be ready)
+        const result = this.roomService.startGame(roomId, client.id);
+        if (result.success) {
+            this.broadcastRoomState(roomId);
         } else {
-            // Already in ticket pick, start game
-            const result = this.roomService.startGame(roomId, client.id);
-            if (result.success) {
-                this.broadcastRoomState(roomId);
-            } else {
-                return this.sendError(client, result.error.code, result.error.message);
-            }
+            return this.sendError(client, result.error.code, result.error.message);
         }
     }
 

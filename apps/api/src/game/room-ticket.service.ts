@@ -16,49 +16,7 @@ export class RoomTicketService {
     constructor(private roomManager: RoomManager) { }
 
     /**
-     * Start ticket pick phase (host only)
-     * Tickets are already generated when player is approved
-     */
-    startTicketPick(roomId: string, hostSocketId: string): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
-
-        if (!room) {
-            return {
-                success: false,
-                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
-            };
-        }
-
-        if (!this.roomManager.isHost(room, hostSocketId)) {
-            return {
-                success: false,
-                error: { code: ErrorCode.NOT_HOST, message: 'Only host can start' },
-            };
-        }
-
-        if (room.phase !== RoomPhase.LOBBY) {
-            return {
-                success: false,
-                error: { code: ErrorCode.INVALID_PHASE, message: 'Invalid phase' },
-            };
-        }
-
-        // Ensure all players have tickets (in case any missed during approve)
-        for (const player of room.players) {
-            if (!player.ticket) {
-                player.ticket = generateTicket();
-            }
-            player.ready = false;
-        }
-
-        room.phase = RoomPhase.TICKET_PICK;
-        this.roomManager.update(roomId, room);
-
-        return { success: true, data: undefined };
-    }
-
-    /**
-     * Reroll ticket for a player (allowed in LOBBY or TICKET_PICK phase, but not if ready)
+     * Reroll ticket for a player (only in LOBBY phase, before ready)
      */
     rerollTicket(roomId: string, socketId: string): ServiceResult<void> {
         const room = this.roomManager.get(roomId);
@@ -70,8 +28,8 @@ export class RoomTicketService {
             };
         }
 
-        // Allow reroll in LOBBY or TICKET_PICK phase
-        if (room.phase !== RoomPhase.LOBBY && room.phase !== RoomPhase.TICKET_PICK) {
+        // Only allow reroll in LOBBY phase
+        if (room.phase !== RoomPhase.LOBBY) {
             return {
                 success: false,
                 error: { code: ErrorCode.INVALID_PHASE, message: 'Cannot reroll after game started' },
@@ -102,7 +60,7 @@ export class RoomTicketService {
     }
 
     /**
-     * Save ticket and mark player as ready
+     * Save ticket and mark player as ready (only in LOBBY phase)
      */
     saveTicketReady(roomId: string, socketId: string): ServiceResult<void> {
         const room = this.roomManager.get(roomId);
@@ -114,10 +72,11 @@ export class RoomTicketService {
             };
         }
 
-        if (room.phase !== RoomPhase.TICKET_PICK) {
+        // Only allow ready in LOBBY phase
+        if (room.phase !== RoomPhase.LOBBY) {
             return {
                 success: false,
-                error: { code: ErrorCode.INVALID_PHASE, message: 'Not in ticket pick phase' },
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Cannot ready after game started' },
             };
         }
 

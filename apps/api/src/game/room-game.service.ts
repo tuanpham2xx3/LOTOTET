@@ -18,6 +18,7 @@ export class RoomGameService {
 
     /**
      * Start the game (host only, all players must be ready)
+     * Now starts directly from LOBBY phase
      */
     startGame(roomId: string, hostSocketId: string): ServiceResult<void> {
         const room = this.roomManager.get(roomId);
@@ -36,10 +37,10 @@ export class RoomGameService {
             };
         }
 
-        if (room.phase !== RoomPhase.TICKET_PICK) {
+        if (room.phase !== RoomPhase.LOBBY) {
             return {
                 success: false,
-                error: { code: ErrorCode.INVALID_PHASE, message: 'Not in ticket pick phase' },
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Game can only be started from lobby' },
             };
         }
 

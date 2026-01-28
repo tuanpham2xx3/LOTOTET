@@ -12,10 +12,12 @@ export type Ticket = (number | null)[][];
 
 /**
  * Room phases during the game lifecycle
+ * - LOBBY: Players join, get tickets, reroll, ready
+ * - PLAYING: Game in progress
+ * - ENDED: Game finished
  */
 export enum RoomPhase {
   LOBBY = 'LOBBY',
-  TICKET_PICK = 'TICKET_PICK',
   PLAYING = 'PLAYING',
   ENDED = 'ENDED',
 }

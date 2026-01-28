@@ -9,11 +9,11 @@ import type { Ticket } from "./types";
  * Column 0: 1-9, Column 1: 10-19, ..., Column 8: 80-90
  */
 function getColumnRange(col: number): number[] {
-    if(col === 0) {
-        return Array.from({length: 9}, (_, i) => i + 1); // 1-9
+    if (col === 0) {
+        return Array.from({ length: 9 }, (_, i) => i + 1); // 1-9
     }
-    if(col === 8) {
-        return Array.from({ length: 11}, (_, i) => i + 80); // 80-90
+    if (col === 8) {
+        return Array.from({ length: 11 }, (_, i) => i + 80); // 80-90
     }
     const start = col * 10;
     return Array.from({ length: 10 }, (_, i) => i + start); // e.g
@@ -22,7 +22,7 @@ function getColumnRange(col: number): number[] {
 /**
  * Shuffle array in place (Fisher-Yates)
  */
-function shuffle<T>(arr:T[]): T[] {
+function shuffle<T>(arr: T[]): T[] {
     const result = [...arr];
     for (let i = result.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -63,7 +63,7 @@ export function generateTicket(): Ticket {
             }
         }
 
-        if (colCounts.reduce((a,b) => a + b, 0) === TOTAL_NUMBERS) {
+        if (colCounts.reduce((a, b) => a + b, 0) === TOTAL_NUMBERS) {
             break;
         }
         attemps++;
@@ -73,13 +73,14 @@ export function generateTicket(): Ticket {
     const columnNumbers: (number | null)[][] = [];
     for (let col = 0; col < COLS; col++) {
         const range = getColumnRange(col);
-        const selected = shuffle(range).slice(0, colCounts[col]).sort((a, b) => a - b);
+        const selected = shuffle(range).slice(0, colCounts[col]); // Không sort - giữ thứ tự ngẫu nhiên
         columnNumbers.push(selected);
     }
-    
+
     // step 3 build the grid with backtracking
     const grid: (number | null)[][] = Array.from({
-        length:ROWS }, () => Array(COLS).fill(null)
+        length: ROWS
+    }, () => Array(COLS).fill(null)
     );
     // track with column indices we've placed per col
     const colIndices = Array(COLS).fill(0);
