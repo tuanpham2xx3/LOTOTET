@@ -20,6 +20,7 @@ import {
     SetBetAmountSchema,
     SpectateRoomSchema,
     SpectatorRequestJoinSchema,
+    ReconnectSchema,
     MarkSchema,
     NoNumberSchema,
     ErrorCode,
@@ -208,6 +209,45 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
+    }
+
+    @SubscribeMessage('room:reconnect')
+    handleReconnect(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] room:reconnect from ${client.id}`, payload);
+
+        const parsed = ReconnectSchema.safeParse(payload);
+        if (!parsed.success) {
+            const error: ErrorPayload = {
+                code: ErrorCode.VALIDATION_ERROR,
+                message: 'Invalid payload',
+                details: parsed.error.errors,
+            };
+            return { success: false, error };
+        }
+
+        const { roomId, playerId } = parsed.data;
+        const result = this.roomService.reconnectPlayer(roomId, playerId, client.id);
+
+        if (result.success) {
+            // Join socket room and set client data
+            client.join(roomId);
+            client.data.roomId = roomId;
+            client.data.playerId = playerId;
+
+            // Send current room state to reconnected player
+            const room = this.roomService.getRoom(roomId);
+            if (room) {
+                client.emit('room:state', room);
+            }
+
+            console.log(`[Gateway] Player ${playerId} reconnected to room ${roomId}`);
+            return { success: true };
+        }
+
+        return { success: false, error: result.error };
     }
 
     @SubscribeMessage('room:setBetAmount')

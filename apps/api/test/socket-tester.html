@@ -422,28 +422,77 @@
             </div>
         </div>
 
-        <!-- Game Actions -->
+        <!-- Game Actions / Playing Phase -->
         <div class="panel">
-            <h2>🎯 Turn Actions</h2>
+            <h2>🎯 Playing Phase</h2>
+
+            <!-- Current Turn Info -->
+            <div class="info-box" style="text-align: center; padding: 20px;">
+                <div style="font-size: 12px; color: var(--text-dim);">Số hiện tại</div>
+                <div id="currentNumber"
+                    style="font-size: 64px; font-weight: bold; color: var(--accent); line-height: 1;">-</div>
+                <div style="font-size: 12px; color: var(--text-dim); margin-top: 8px;">Turn: <span
+                        id="currentTurnId">0</span></div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="btn-group" style="margin-bottom: 15px;">
+                <button class="btn-success" onclick="markCurrentNumber()" style="flex: 2;">✓ Có số này</button>
+                <button class="btn-secondary" onclick="turnNoNumber()" style="flex: 1;">✗ Không có</button>
+            </div>
+
+            <!-- Waiting Board -->
+            <div style="margin-bottom: 15px;">
+                <h3 style="font-size: 13px; color: var(--warn); margin-bottom: 8px;">⚠️ Sắp BINGO (4/5)</h3>
+                <div id="waitingBoard"
+                    style="font-size: 12px; color: var(--text-dim); background: rgba(245, 158, 11, 0.1); padding: 10px; border-radius: 8px; min-height: 30px;">
+                    Chưa có ai
+                </div>
+            </div>
+
+            <!-- BINGO Button -->
+            <button class="btn-warn" onclick="bingoClaim()"
+                style="width: 100%; padding: 15px; font-size: 18px; font-weight: bold;">
+                🎉 HÔ BINGO!
+            </button>
+
+            <hr>
+
+            <!-- Drawn Numbers -->
             <div>
-                <label>Turn ID</label>
-                <input type="number" id="turnId" value="1" placeholder="1">
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label>Row (0-8)</label>
-                    <input type="number" id="markRow" value="0" min="0" max="8">
-                </div>
-                <div>
-                    <label>Col (0-8)</label>
-                    <input type="number" id="markCol" value="0" min="0" max="8">
+                <h3 style="font-size: 13px; color: var(--text-dim); margin-bottom: 8px;">🎱 Số đã quay (<span
+                        id="drawnCount">0</span>)</h3>
+                <div id="drawnNumbers"
+                    style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 80px; overflow-y: auto;">
+                    <span style="color: var(--text-dim);">Chưa quay số nào</span>
                 </div>
             </div>
-            <div class="btn-group">
-                <button class="btn-success" onclick="turnMark()">✓ Mark Cell</button>
-                <button class="btn-secondary" onclick="turnNoNumber()">✗ No Number</button>
-                <button class="btn-warn" onclick="bingoClaim()">🎉 BINGO!</button>
-            </div>
+
+            <hr>
+
+            <!-- Manual Mark (fallback) -->
+            <details>
+                <summary style="cursor: pointer; font-size: 12px; color: var(--text-dim);">Manual Mark (advanced)
+                </summary>
+                <div style="margin-top: 10px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label>Turn</label>
+                            <input type="number" id="turnId" value="1">
+                        </div>
+                        <div>
+                            <label>Row</label>
+                            <input type="number" id="markRow" value="0" min="0" max="8">
+                        </div>
+                        <div>
+                            <label>Col</label>
+                            <input type="number" id="markCol" value="0" min="0" max="8">
+                        </div>
+                    </div>
+                    <button class="btn-secondary" onclick="turnMark()" style="width: 100%; margin-top: 8px;">Send
+                        Mark</button>
+                </div>
+            </details>
         </div>
 
         <!-- Room State -->
@@ -474,7 +523,8 @@
         }
 
         function getSession() {
-            const saved = sessionStorage.getItem(SESSION_KEY);
+            // Use localStorage instead of sessionStorage for persistence across reloads
+            const saved = localStorage.getItem(SESSION_KEY);
             if (saved) {
                 return JSON.parse(saved);
             }
@@ -493,7 +543,7 @@
         }
 
         function saveSession(session) {
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         }
 
         function updateSession(updates) {
@@ -504,7 +554,7 @@
         }
 
         function resetSession() {
-            sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_KEY);
             location.reload();
         }
 
@@ -558,8 +608,12 @@
                 document.getElementById('socketIdDisplay').textContent = socket.id;
                 log('receive', 'connect', { socketId: socket.id, testerId: session.testerId });
 
-                // Auto-rejoin room if we had one
-                if (session.roomId && session.role === 'Spectator') {
+                // Auto-reconnect if we have a player session
+                if (session.roomId && session.playerId && session.role !== 'Spectator') {
+                    console.log('Attempting to reconnect as player:', session.playerId);
+                    reconnectPlayer(session.roomId, session.playerId);
+                } else if (session.roomId && session.role === 'Spectator') {
+                    // Re-spectate if we were spectating
                     spectateRoom(session.roomId);
                 }
             });
@@ -576,6 +630,17 @@
                 // Update turn ID from state
                 if (state.game?.turnId) {
                     document.getElementById('turnId').value = state.game.turnId;
+                    document.getElementById('currentTurnId').textContent = state.game.turnId;
+                }
+
+                // Update drawn numbers
+                if (state.game?.drawnNumbers) {
+                    updateDrawnNumbers(state.game.drawnNumbers);
+                }
+
+                // Update waiting board
+                if (state.game?.waitingBoard) {
+                    updateWaitingBoard(state.game.waitingBoard);
                 }
 
                 // Find my player ID from state
@@ -617,10 +682,31 @@
             socket.on('turn:new', (data) => {
                 log('receive', 'turn:new', data);
                 document.getElementById('turnId').value = data.turnId;
+                document.getElementById('currentTurnId').textContent = data.turnId;
+                document.getElementById('currentNumber').textContent = data.number;
+                document.getElementById('currentNumber').style.animation = 'none';
+                setTimeout(() => {
+                    document.getElementById('currentNumber').style.animation = 'pulse 0.5s ease';
+                }, 10);
+
+                // Store current number for quick mark
+                window.currentDrawnNumber = data.number;
             });
-            socket.on('turn:progress', (data) => log('receive', 'turn:progress', data));
-            socket.on('waiting:update', (data) => log('receive', 'waiting:update', data));
-            socket.on('game:ended', (data) => log('receive', 'game:ended', data));
+
+            socket.on('turn:progress', (data) => {
+                log('receive', 'turn:progress', data);
+            });
+
+            socket.on('waiting:update', (data) => {
+                log('receive', 'waiting:update', data);
+                updateWaitingBoard(data.waitingBoard || data);
+            });
+
+            socket.on('game:ended', (data) => {
+                log('receive', 'game:ended', data);
+                alert(`🎉 Game kết thúc!\nNgười thắng: ${data.winner?.playerName || 'Unknown'}\nGiải thưởng: ${data.winner?.prize || 0}`);
+            });
+
             socket.on('error', (data) => log('error', 'error', data));
         }
 
@@ -677,6 +763,22 @@
                 log('receive', 'room:join callback', res);
                 if (res.success) {
                     updateRoomInfo(roomId, 'Pending', null);
+                }
+            });
+        }
+
+        // Reconnect to room after page refresh
+        function reconnectPlayer(roomId, playerId) {
+            emit('room:reconnect', { roomId, playerId }, (res) => {
+                log('receive', 'room:reconnect callback', res);
+                if (res.success) {
+                    console.log('Reconnected successfully!');
+                    document.getElementById('currentRoomId').textContent = roomId;
+                } else {
+                    console.log('Reconnect failed:', res.error);
+                    // Clear invalid session
+                    updateSession({ roomId: null, playerId: null, role: null });
+                    alert('Could not reconnect: ' + (res.error?.message || 'Unknown error') + '\nSession cleared.');
                 }
             });
         }
@@ -815,6 +917,86 @@
             document.getElementById('markCol').value = col;
             // Auto-send mark
             emit('turn:mark', { turnId, row, col });
+        }
+
+        // ==================== Playing Phase UI Helpers ====================
+
+        function updateDrawnNumbers(numbers) {
+            const container = document.getElementById('drawnNumbers');
+            const countEl = document.getElementById('drawnCount');
+
+            countEl.textContent = numbers.length;
+
+            if (numbers.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-dim);">Chưa quay số nào</span>';
+                return;
+            }
+
+            container.innerHTML = numbers.map((n, i) => {
+                const isLast = i === numbers.length - 1;
+                return `<span style="
+                    display: inline-block;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    background: ${isLast ? 'var(--accent)' : 'rgba(255,255,255,0.1)'};
+                    color: ${isLast ? 'white' : 'var(--text)'};
+                    font-weight: ${isLast ? 'bold' : 'normal'};
+                ">${n}</span>`;
+            }).join('');
+        }
+
+        function updateWaitingBoard(waitingBoard) {
+            const container = document.getElementById('waitingBoard');
+
+            if (!waitingBoard || waitingBoard.length === 0) {
+                container.innerHTML = 'Chưa có ai';
+                container.style.background = 'rgba(245, 158, 11, 0.1)';
+                return;
+            }
+
+            container.innerHTML = waitingBoard.map(p => `
+                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <span style="color: var(--warn); font-weight: bold;">${p.playerName || p.playerId}</span>
+                    <span>Turn: ${p.turnId}</span>
+                </div>
+            `).join('');
+            container.style.background = 'rgba(245, 158, 11, 0.2)';
+        }
+
+        function markCurrentNumber() {
+            // Find current number in my ticket and mark it
+            const currentNumber = window.currentDrawnNumber;
+            if (!currentNumber) {
+                alert('Chưa có số được quay!');
+                return;
+            }
+
+            // Get my ticket from the latest state
+            const roomState = document.getElementById('roomState').textContent;
+            try {
+                const state = JSON.parse(roomState);
+                const myPlayer = state.players?.find(p => p.socketId === socket?.id);
+                if (!myPlayer?.ticket) {
+                    alert('Không tìm thấy ticket!');
+                    return;
+                }
+
+                // Find the number in ticket
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (myPlayer.ticket[row][col] === currentNumber) {
+                            const turnId = parseInt(document.getElementById('turnId').value);
+                            emit('turn:mark', { turnId, row, col });
+                            return;
+                        }
+                    }
+                }
+
+                alert(`Số ${currentNumber} không có trong ticket của bạn!`);
+            } catch (e) {
+                alert('Lỗi: ' + e.message);
+            }
         }
 
         // ==================== Init ====================

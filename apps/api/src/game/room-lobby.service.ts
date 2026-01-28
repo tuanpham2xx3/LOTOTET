@@ -388,6 +388,53 @@ export class RoomLobbyService {
         return { roomId, room };
     }
 
+    /**
+     * Reconnect a player who has refreshed the page
+     * Updates their socket ID and re-associates them with the room
+     */
+    reconnectPlayer(
+        roomId: string,
+        playerId: string,
+        newSocketId: string,
+    ): ServiceResult<{ player: Player }> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        const player = this.roomManager.findPlayerById(room, playerId);
+
+        if (!player) {
+            return {
+                success: false,
+                error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Player not found in room' },
+            };
+        }
+
+        // Store old socket ID for cleanup
+        const oldSocketId = player.socketId;
+
+        // Update player's socket ID
+        const updated = this.roomManager.updatePlayerSocketId(room, playerId, newSocketId, oldSocketId);
+
+        if (!updated) {
+            return {
+                success: false,
+                error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Failed to update socket' },
+            };
+        }
+
+        // Associate new socket with room
+        this.roomManager.associateSocket(newSocketId, roomId);
+        this.roomManager.update(roomId, room);
+
+        return { success: true, data: { player } };
+    }
+
     // ==================== Private Helpers ====================
 
     /**

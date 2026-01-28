@@ -152,4 +152,29 @@ export class RoomManager {
     findSpectatorBySocketId(room: RoomState, socketId: string): { socketId: string; joinedAt: number } | undefined {
         return room.spectators.find((s) => s.socketId === socketId);
     }
+
+    /**
+     * Find player in room by player ID (for reconnection)
+     */
+    findPlayerById(room: RoomState, playerId: string): Player | undefined {
+        return room.players.find((p) => p.id === playerId);
+    }
+
+    /**
+     * Update player's socket ID (for reconnection)
+     */
+    updatePlayerSocketId(room: RoomState, playerId: string, newSocketId: string, oldSocketId?: string): boolean {
+        const player = this.findPlayerById(room, playerId);
+        if (!player) return false;
+
+        // Remove old socket association if exists
+        if (oldSocketId) {
+            this.socketToRoom.delete(oldSocketId);
+        }
+
+        // Update player's socket ID
+        player.socketId = newSocketId;
+
+        return true;
+    }
 }

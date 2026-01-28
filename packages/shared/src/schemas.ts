@@ -76,3 +76,11 @@ export const SpectatorRequestJoinSchema = z.object({
 
 export type SpectatorRequestJoinPayload = z.infer<typeof SpectatorRequestJoinSchema>;
 
+// Reconnect schema - for players to rejoin after page refresh
+export const ReconnectSchema = z.object({
+  roomId: z.string().min(1, 'Room ID is required'),
+  playerId: z.string().min(1, 'Player ID is required'),
+});
+
+export type ReconnectPayload = z.infer<typeof ReconnectSchema>;
+

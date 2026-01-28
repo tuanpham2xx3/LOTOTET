@@ -20,6 +20,10 @@ export interface ClientToServerEvents {
     balance: number;
   }) => void;
   'room:setBetAmount': (payload: { amount: number }) => void;
+  'room:reconnect': (
+    payload: { roomId: string; playerId: string },
+    callback: (response: { success: boolean; error?: ErrorPayload }) => void
+  ) => void;
 
   // Spectator mode
   'room:spectate': (

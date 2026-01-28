@@ -64,6 +64,10 @@ export class RoomService {
         return this.lobbyService.handleDisconnect(socketId);
     }
 
+    reconnectPlayer(roomId: string, playerId: string, newSocketId: string) {
+        return this.lobbyService.reconnectPlayer(roomId, playerId, newSocketId);
+    }
+
     setBetAmount(roomId: string, amount: number, hostSocketId: string) {
         return this.lobbyService.setBetAmount(roomId, amount, hostSocketId);
     }
