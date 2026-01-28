@@ -198,6 +198,43 @@ export class RoomLobbyService {
     }
 
     /**
+     * Set bet amount for the room (host only)
+     */
+    setBetAmount(
+        roomId: string,
+        amount: number,
+        hostSocketId: string,
+    ): ServiceResult<void> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        if (!this.roomManager.isHost(room, hostSocketId)) {
+            return {
+                success: false,
+                error: { code: ErrorCode.NOT_HOST, message: 'Only host can set bet amount' },
+            };
+        }
+
+        if (room.phase !== RoomPhase.LOBBY) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Can only set bet in lobby' },
+            };
+        }
+
+        room.betAmount = amount;
+        this.roomManager.update(roomId, room);
+
+        return { success: true, data: undefined };
+    }
+
+    /**
      * Handle player disconnect
      */
     handleDisconnect(socketId: string): { roomId: string; room: RoomState } | undefined {

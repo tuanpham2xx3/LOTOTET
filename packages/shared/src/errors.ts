@@ -28,6 +28,9 @@ export enum ErrorCode {
   // Validation errors
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_TICKET = 'INVALID_TICKET',
+
+  // Balance errors
+  INSUFFICIENT_BALANCE = 'INSUFFICIENT_BALANCE',
 }
 
 /**

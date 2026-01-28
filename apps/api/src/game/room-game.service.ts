@@ -52,6 +52,25 @@ export class RoomGameService {
             };
         }
 
+        // Validate all players have enough balance for bet
+        if (room.betAmount && room.betAmount > 0) {
+            for (const player of room.players) {
+                if (player.balance < room.betAmount) {
+                    return {
+                        success: false,
+                        error: {
+                            code: ErrorCode.INSUFFICIENT_BALANCE,
+                            message: `${player.name} không đủ tiền (cần ${room.betAmount}, có ${player.balance})`,
+                        },
+                    };
+                }
+            }
+            // Deduct bet from all players
+            for (const player of room.players) {
+                player.balance -= room.betAmount;
+            }
+        }
+
         room.phase = RoomPhase.PLAYING;
         room.game = {
             turnId: 0,
@@ -301,12 +320,17 @@ export class RoomGameService {
             };
         }
 
+        // Calculate prize and award to winner
+        const prize = (room.betAmount || 0) * room.players.length;
+        player.balance += prize;
+
         // Game ends
         room.phase = RoomPhase.ENDED;
         room.winner = {
             playerId: player.id,
             playerName: player.name,
             winningRow,
+            prize,
         };
         this.roomManager.update(roomId, room);
 

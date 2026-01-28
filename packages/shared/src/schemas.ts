@@ -53,3 +53,10 @@ export const JoinRoomSchema = z.object({
 });
 
 export type JoinRoomPayload = z.infer<typeof JoinRoomSchema>;
+
+// Set bet amount schema
+export const SetBetAmountSchema = z.object({
+  amount: z.number().int().min(1, 'Bet must be at least 1').max(1_000_000, 'Bet too high'),
+});
+
+export type SetBetAmountPayload = z.infer<typeof SetBetAmountSchema>;

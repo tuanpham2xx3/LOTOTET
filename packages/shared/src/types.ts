@@ -91,9 +91,11 @@ export interface RoomState {
   players: Player[];
   pendingRequests: JoinRequest[];
   game?: GameState;
+  betAmount?: number; // Số tiền cược mỗi ván
   winner?: {
     playerId: string;
     playerName: string;
     winningRow: number;
+    prize: number; // Số tiền thắng
   };
 }

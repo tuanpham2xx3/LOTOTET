@@ -64,6 +64,10 @@ export class RoomService {
         return this.lobbyService.handleDisconnect(socketId);
     }
 
+    setBetAmount(roomId: string, amount: number, hostSocketId: string) {
+        return this.lobbyService.setBetAmount(roomId, amount, hostSocketId);
+    }
+
     // ==================== Ticket Operations (delegated) ====================
 
     startTicketPick(roomId: string, hostSocketId: string) {

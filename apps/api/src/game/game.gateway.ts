@@ -17,6 +17,7 @@ import {
     ApproveJoinSchema,
     RejectJoinSchema,
     UpdateBalanceSchema,
+    SetBetAmountSchema,
     MarkSchema,
     NoNumberSchema,
     ErrorCode,
@@ -197,6 +198,36 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             roomId,
             parsed.data.playerId,
             parsed.data.balance,
+            client.id,
+        );
+
+        if (result.success) {
+            this.broadcastRoomState(roomId);
+        } else {
+            return this.sendError(client, result.error.code, result.error.message);
+        }
+    }
+
+    @SubscribeMessage('room:setBetAmount')
+    handleSetBetAmount(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] room:setBetAmount from ${client.id}`, payload);
+
+        const parsed = SetBetAmountSchema.safeParse(payload);
+        if (!parsed.success) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Invalid payload');
+        }
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
+        }
+
+        const result = this.roomService.setBetAmount(
+            roomId,
+            parsed.data.amount,
             client.id,
         );
 
