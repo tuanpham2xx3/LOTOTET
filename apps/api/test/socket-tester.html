@@ -591,10 +591,22 @@
         }
 
         function updateRoomInfo(roomId, role, playerId) {
-            document.getElementById('currentRoomId').textContent = roomId || '-';
-            document.getElementById('currentRole').textContent = role || '-';
-            document.getElementById('currentPlayerId').textContent = playerId || '-';
-            updateSession({ roomId, role, playerId });
+            // Update DOM elements (use correct IDs)
+            const elRoom = document.getElementById('currentRoomId');
+            const elRole = document.getElementById('currentRole');
+
+            if (elRoom) elRoom.textContent = roomId || '-';
+            if (elRole) elRole.textContent = role || '-';
+
+            // Only update session with non-null values to avoid overwriting
+            const updates = {};
+            if (roomId) updates.roomId = roomId;
+            if (role) updates.role = role;
+            if (playerId) updates.playerId = playerId;
+
+            if (Object.keys(updates).length > 0) {
+                updateSession(updates);
+            }
         }
 
         function connect() {
@@ -606,15 +618,21 @@
             socket.on('connect', () => {
                 updateStatus(true);
                 document.getElementById('socketIdDisplay').textContent = socket.id;
-                log('receive', 'connect', { socketId: socket.id, testerId: session.testerId });
+
+                // Re-read session from localStorage (may have been updated)
+                const currentSession = getSession();
+                log('receive', 'connect', { socketId: socket.id, testerId: currentSession.testerId, savedPlayerId: currentSession.playerId, savedRoomId: currentSession.roomId });
 
                 // Auto-reconnect if we have a player session
-                if (session.roomId && session.playerId && session.role !== 'Spectator') {
-                    console.log('Attempting to reconnect as player:', session.playerId);
-                    reconnectPlayer(session.roomId, session.playerId);
-                } else if (session.roomId && session.role === 'Spectator') {
+                if (currentSession.roomId && currentSession.playerId && currentSession.role !== 'Spectator') {
+                    console.log('Attempting to reconnect as player:', currentSession.playerId, 'to room:', currentSession.roomId);
+                    reconnectPlayer(currentSession.roomId, currentSession.playerId);
+                } else if (currentSession.roomId && currentSession.role === 'Spectator') {
                     // Re-spectate if we were spectating
-                    spectateRoom(session.roomId);
+                    console.log('Attempting to re-spectate room:', currentSession.roomId);
+                    spectateRoom(currentSession.roomId);
+                } else {
+                    console.log('No saved session to reconnect, session:', currentSession);
                 }
             });
 
@@ -646,8 +664,14 @@
                 // Find my player ID from state
                 const myPlayer = state.players?.find(p => p.socketId === socket?.id);
                 if (myPlayer) {
-                    updateSession({ playerId: myPlayer.id, role: myPlayer.isHost ? 'Host' : 'Player' });
+                    // Always save roomId, playerId, and role together
+                    updateSession({
+                        roomId: state.roomId,
+                        playerId: myPlayer.id,
+                        role: myPlayer.isHost ? 'Host' : 'Player'
+                    });
                     document.getElementById('myPlayerId').value = myPlayer.id;
+                    document.getElementById('currentRoomId').textContent = state.roomId;
                     document.getElementById('currentRole').textContent = myPlayer.isHost ? 'Host' : 'Player';
 
                     // Update Player Actions panel
@@ -737,7 +761,8 @@
             emit('room:create', undefined, (res) => {
                 log('receive', 'room:create callback', res);
                 if (res.roomId) {
-                    updateRoomInfo(res.roomId, 'Host', null);
+                    // Only update roomId and role, don't pass null for playerId
+                    updateRoomInfo(res.roomId, 'Host');
                     document.getElementById('roomIdInput').value = res.roomId;
                 }
             });

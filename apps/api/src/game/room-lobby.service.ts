@@ -354,6 +354,9 @@ export class RoomLobbyService {
 
     /**
      * Handle player disconnect
+     * Note: We don't remove players from room on disconnect to allow reconnection.
+     * Players (including host) can reconnect with their playerId.
+     * Only spectators and pending requests are removed.
      */
     handleDisconnect(socketId: string): { roomId: string; room: RoomState } | undefined {
         const roomId = this.roomManager.getRoomIdBySocketId(socketId);
@@ -362,24 +365,18 @@ export class RoomLobbyService {
         const room = this.roomManager.get(roomId);
         if (!room) return undefined;
 
-        // Remove from pending requests
+        // Remove from pending requests (they need to re-request)
         room.pendingRequests = room.pendingRequests.filter((r) => r.socketId !== socketId);
 
-        // Remove from spectators
+        // Remove from spectators (they can just re-spectate)
         room.spectators = room.spectators.filter((s) => s.socketId !== socketId);
 
-        // Remove from players
-        const playerIndex = room.players.findIndex((p) => p.socketId === socketId);
-        if (playerIndex !== -1) {
-            const player = room.players[playerIndex];
-
-            // If host leaves, delete room
-            if (player.isHost) {
-                this.roomManager.delete(roomId);
-                return undefined;
-            }
-
-            room.players.splice(playerIndex, 1);
+        // Check if this is a player (including host)
+        const player = room.players.find((p) => p.socketId === socketId);
+        if (player) {
+            // DON'T remove player from room - they can reconnect
+            // Just log for debugging
+            console.log(`[RoomLobbyService] Player ${player.id} (host: ${player.isHost}) disconnected, keeping in room for reconnection`);
         }
 
         this.roomManager.removeSocket(socketId);
