@@ -67,42 +67,58 @@ export function EndedView({
                     </div>
                 </div>
 
-                {/* Final Standings */}
-                <div className="mt-8 card p-4 text-left">
+                {/* Final Standings - Leaderboard */}
+                <div className="mt-8 card p-4 text-left min-w-[300px]">
                     <h3 className="text-sm font-medium text-slate-400 mb-3">
-                        📊 Kết quả cuối
+                        📊 Bảng xếp hạng lời / lỗ
                     </h3>
                     <div className="space-y-2">
-                        {roomState.players.map((player, index) => (
-                            <div
-                                key={player.id}
-                                className={cn(
-                                    'flex items-center justify-between p-2 rounded-lg',
-                                    player.id === winner.playerId
-                                        ? 'bg-emerald-500/20 border border-emerald-500/30'
-                                        : 'bg-slate-800/50',
-                                )}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-slate-500">#{index + 1}</span>
+                        {[...roomState.players]
+                            .map((player) => {
+                                const initialBalance = roomState.initialBalances?.[player.id] ?? player.balance;
+                                const profitLoss = player.balance - initialBalance;
+                                return { player, profitLoss };
+                            })
+                            .sort((a, b) => b.profitLoss - a.profitLoss)
+                            .map(({ player, profitLoss }, index) => (
+                                <div
+                                    key={player.id}
+                                    className={cn(
+                                        'flex items-center justify-between p-3 rounded-lg',
+                                        player.id === winner.playerId
+                                            ? 'bg-emerald-500/20 border border-emerald-500/30'
+                                            : 'bg-slate-800/50',
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-lg">
+                                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                        </span>
+                                        <div>
+                                            <span className={cn(
+                                                'font-medium',
+                                                player.id === winner.playerId && 'text-emerald-400',
+                                            )}>
+                                                {player.name}
+                                                {player.id === winner.playerId && ' 🏆'}
+                                            </span>
+                                            <div className="text-xs text-slate-500">
+                                                Số dư: {formatNumber(player.balance)}đ
+                                            </div>
+                                        </div>
+                                    </div>
                                     <span className={cn(
-                                        player.id === winner.playerId && 'text-emerald-400',
+                                        'font-bold text-lg',
+                                        profitLoss > 0
+                                            ? 'text-emerald-400'
+                                            : profitLoss < 0
+                                                ? 'text-red-400'
+                                                : 'text-slate-400',
                                     )}>
-                                        {player.name}
+                                        {profitLoss >= 0 ? '+' : ''}{formatNumber(profitLoss)}đ
                                     </span>
                                 </div>
-                                <span className={cn(
-                                    'font-medium',
-                                    player.id === winner.playerId
-                                        ? 'text-emerald-400'
-                                        : 'text-red-400',
-                                )}>
-                                    {player.id === winner.playerId
-                                        ? `+${formatNumber(winner.prize)}`
-                                        : `-${formatNumber(roomState.betAmount || 0)}`}
-                                </span>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </div>
 

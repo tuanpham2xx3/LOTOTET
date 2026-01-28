@@ -103,6 +103,7 @@ export interface RoomState {
   spectators: Spectator[];
   game?: GameState;
   betAmount?: number; // Số tiền cược mỗi ván
+  initialBalances?: Record<string, number>; // playerId -> balance trước khi bắt đầu trận
   winner?: {
     playerId: string;
     playerName: string;

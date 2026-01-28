@@ -54,21 +54,30 @@ export class RoomGameService {
         }
 
         // Validate all players have enough balance for bet
-        if (room.betAmount && room.betAmount > 0) {
+        const betAmount = room.betAmount || 0;
+
+        // Save initial balances for leaderboard
+        room.initialBalances = {};
+        for (const player of room.players) {
+            room.initialBalances[player.id] = player.balance;
+        }
+
+        if (betAmount > 0) {
             for (const player of room.players) {
-                if (player.balance < room.betAmount) {
+                if (player.balance < betAmount) {
                     return {
                         success: false,
                         error: {
                             code: ErrorCode.INSUFFICIENT_BALANCE,
-                            message: `${player.name} không đủ tiền (cần ${room.betAmount}, có ${player.balance})`,
+                            message: `${player.name} không đủ tiền (cần ${betAmount}, có ${player.balance})`,
                         },
                     };
                 }
             }
             // Deduct bet from all players
             for (const player of room.players) {
-                player.balance -= room.betAmount;
+                console.log(`[Game] Deducting ${betAmount} from ${player.name}: ${player.balance} -> ${player.balance - betAmount}`);
+                player.balance -= betAmount;
             }
         }
 
@@ -341,7 +350,10 @@ export class RoomGameService {
         }
 
         // Calculate prize and award to winner
-        const prize = (room.betAmount || 0) * room.players.length;
+        const betAmount = room.betAmount || 0;
+        const prize = betAmount * room.players.length;
+        console.log(`[Game] ${player.name} wins! Prize: ${prize} = ${betAmount} x ${room.players.length} players`);
+        console.log(`[Game] ${player.name} balance: ${player.balance} -> ${player.balance + prize}`);
         player.balance += prize;
 
         // Game ends
