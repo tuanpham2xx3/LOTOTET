@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { RoomState, Player, RoomPhase, WaitingState } from '@lototet/shared';
+import type { RoomState, Player, RoomPhase, WaitingState, ChatMessage } from '@lototet/shared';
 import { getSocket, connectSocket, disconnectSocket, type TypedSocket } from '@/lib/socket';
 
 interface CurrentTurn {
@@ -74,6 +74,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
             set({ pendingPlayerIds: payload.pendingPlayerIds });
         });
 
+        // Chat message listener - dedupe by message id
+        socket.on('chat:message', (message) => {
+            set((state) => {
+                if (!state.roomState) return state;
+                // Check if message already exists (avoid duplicates)
+                if (state.roomState.messages.some((m) => m.id === message.id)) {
+                    return state;
+                }
+                return {
+                    roomState: {
+                        ...state.roomState,
+                        messages: [...state.roomState.messages, message],
+                    },
+                };
+            });
+        });
+
         socket.on('error', (error) => {
             console.error('[Socket Error]', error);
         });
@@ -138,3 +155,7 @@ export const useWaitingBoard = (): WaitingState[] =>
 
 export const useDrawnNumbers = (): number[] =>
     useGameStore((state) => state.roomState?.game?.drawnNumbers ?? []);
+
+export const useChatMessages = (): ChatMessage[] =>
+    useGameStore((state) => state.roomState?.messages ?? []);
+

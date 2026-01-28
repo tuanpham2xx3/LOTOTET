@@ -12,6 +12,7 @@ import {
     useConnected,
 } from '@/stores/gameStore';
 import { LobbyView, PlayingView, EndedView } from '@/components/Room';
+import { ChatBox } from '@/components/Chat';
 
 export default function RoomPage() {
     const params = useParams();
@@ -272,6 +273,9 @@ export default function RoomPage() {
                     />
                 )}
             </div>
+
+            {/* Chat */}
+            {myPlayer && <ChatBox />}
         </main>
     );
 }

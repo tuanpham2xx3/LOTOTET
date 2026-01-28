@@ -5,6 +5,7 @@ import { RoomManager } from './room.manager';
 import { RoomLobbyService } from './room-lobby.service';
 import { RoomTicketService } from './room-ticket.service';
 import { RoomGameService } from './room-game.service';
+import { RoomChatService } from './room-chat.service';
 
 @Module({
     providers: [
@@ -14,6 +15,7 @@ import { RoomGameService } from './room-game.service';
         RoomLobbyService,
         RoomTicketService,
         RoomGameService,
+        RoomChatService,
     ],
 })
 export class GameModule { }

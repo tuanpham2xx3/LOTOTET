@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomService } from './room.service';
+import { RoomChatService } from './room-chat.service';
 import {
     ClientToServerEvents,
     ServerToClientEvents,
@@ -40,7 +41,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server!: TypedServer;
 
-    constructor(private roomService: RoomService) { }
+    constructor(
+        private roomService: RoomService,
+        private chatService: RoomChatService,
+    ) { }
 
     // ==================== Connection Lifecycle ====================
 
@@ -623,6 +627,37 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         if (result.success) {
             this.broadcastRoomState(roomId);
+        } else {
+            return this.sendError(client, result.error.code, result.error.message);
+        }
+    }
+
+    // ==================== Chat ====================
+
+    @SubscribeMessage('chat:send')
+    handleChatSend(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] chat:send from ${client.id}`, payload);
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
+        }
+
+        // Validate payload
+        if (!payload || typeof payload !== 'object' || !('content' in payload)) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Invalid payload');
+        }
+
+        const { content, audioUrl } = payload as { content: string; audioUrl?: string };
+
+        const result = this.chatService.sendMessage(roomId, client.id, content, audioUrl);
+
+        if (result.success) {
+            // Broadcast message to all in room
+            this.server.to(roomId).emit('chat:message', result.data.message);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }

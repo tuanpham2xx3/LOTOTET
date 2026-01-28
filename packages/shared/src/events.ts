@@ -1,4 +1,4 @@
-import type { RoomState, WaitingState } from './types';
+import type { RoomState, WaitingState, ChatMessage } from './types';
 import type { ErrorPayload } from './errors';
 
 /**
@@ -50,6 +50,9 @@ export interface ClientToServerEvents {
   'turn:noNumber': (payload: { turnId: number }) => void;
   'game:bingoClaim': () => void;
   'game:restart': () => void;
+
+  // Chat
+  'chat:send': (payload: { content: string; audioUrl?: string }) => void;
 }
 
 // Server -> Client events
@@ -75,6 +78,9 @@ export interface ServerToClientEvents {
 
   // Error handling
   error: (payload: ErrorPayload) => void;
+
+  // Chat
+  'chat:message': (message: ChatMessage) => void;
 }
 
 // Socket data (attached to each socket connection)

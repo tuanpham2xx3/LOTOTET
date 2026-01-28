@@ -63,6 +63,7 @@ export class RoomManager {
             players: [host],
             pendingRequests: [],
             spectators: [],
+            messages: [],
         };
 
         this.rooms.set(roomId, room);

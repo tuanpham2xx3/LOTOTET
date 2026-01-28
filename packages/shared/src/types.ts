@@ -81,6 +81,18 @@ export interface WaitingState {
 }
 
 /**
+ * Chat message in the room
+ */
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  content: string;
+  audioUrl?: string; // Voice message URL (optional)
+  timestamp: number;
+}
+
+/**
  * Game state during active gameplay
  */
 export interface GameState {
@@ -104,6 +116,7 @@ export interface RoomState {
   game?: GameState;
   betAmount?: number; // Số tiền cược mỗi ván
   initialBalances?: Record<string, number>; // playerId -> balance trước khi bắt đầu trận
+  messages: ChatMessage[]; // Chat history
   winner?: {
     playerId: string;
     playerName: string;
