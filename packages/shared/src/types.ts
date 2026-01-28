@@ -50,6 +50,14 @@ export interface Player {
 }
 
 /**
+ * Spectator watching the room
+ */
+export interface Spectator {
+  socketId: string;
+  joinedAt: number;
+}
+
+/**
  * Pending join request
  */
 export interface JoinRequest {
@@ -90,6 +98,7 @@ export interface RoomState {
   hostId: string;
   players: Player[];
   pendingRequests: JoinRequest[];
+  spectators: Spectator[];
   game?: GameState;
   betAmount?: number; // Số tiền cược mỗi ván
   winner?: {

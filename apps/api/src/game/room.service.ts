@@ -68,6 +68,20 @@ export class RoomService {
         return this.lobbyService.setBetAmount(roomId, amount, hostSocketId);
     }
 
+    // ==================== Spectator Operations (delegated) ====================
+
+    addSpectator(roomId: string, socketId: string) {
+        return this.lobbyService.addSpectator(roomId, socketId);
+    }
+
+    removeSpectator(roomId: string, socketId: string) {
+        return this.lobbyService.removeSpectator(roomId, socketId);
+    }
+
+    spectatorToJoinRequest(roomId: string, socketId: string, name: string, balance: number) {
+        return this.lobbyService.spectatorToJoinRequest(roomId, socketId, name, balance);
+    }
+
     // ==================== Ticket Operations (delegated) ====================
 
     startTicketPick(roomId: string, hostSocketId: string) {

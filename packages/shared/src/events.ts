@@ -19,6 +19,17 @@ export interface ClientToServerEvents {
     playerId: string;
     balance: number;
   }) => void;
+  'room:setBetAmount': (payload: { amount: number }) => void;
+
+  // Spectator mode
+  'room:spectate': (
+    payload: { roomId: string },
+    callback: (response: { success: boolean; error?: ErrorPayload }) => void
+  ) => void;
+  'spectator:requestJoin': (
+    payload: { name: string; balance: number },
+    callback: (response: { success: boolean; error?: ErrorPayload }) => void
+  ) => void;
 
   // Ticket management
   'ticket:reroll': () => void;

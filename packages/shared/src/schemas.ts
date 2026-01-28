@@ -60,3 +60,19 @@ export const SetBetAmountSchema = z.object({
 });
 
 export type SetBetAmountPayload = z.infer<typeof SetBetAmountSchema>;
+
+// Spectate room schema
+export const SpectateRoomSchema = z.object({
+  roomId: z.string().min(1, 'Room ID is required'),
+});
+
+export type SpectateRoomPayload = z.infer<typeof SpectateRoomSchema>;
+
+// Spectator request to join as player
+export const SpectatorRequestJoinSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(24, 'Name too long'),
+  balance: z.number().int().min(0).max(1_000_000),
+});
+
+export type SpectatorRequestJoinPayload = z.infer<typeof SpectatorRequestJoinSchema>;
+

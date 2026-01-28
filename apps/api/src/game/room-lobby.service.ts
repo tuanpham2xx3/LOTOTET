@@ -6,6 +6,7 @@ import {
     Player,
     PlayerStatus,
     JoinRequest,
+    Spectator,
     ErrorCode,
     ErrorPayload,
 } from '@lototet/shared';
@@ -234,6 +235,115 @@ export class RoomLobbyService {
         return { success: true, data: undefined };
     }
 
+    // ==================== Spectator Management ====================
+
+    /**
+     * Add a spectator to the room
+     */
+    addSpectator(roomId: string, socketId: string): ServiceResult<void> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        // Check if already spectating
+        if (room.spectators.find((s) => s.socketId === socketId)) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ALREADY_IN_ROOM, message: 'Already spectating' },
+            };
+        }
+
+        // Check if already a player
+        if (room.players.find((p) => p.socketId === socketId)) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ALREADY_IN_ROOM, message: 'Already a player' },
+            };
+        }
+
+        const spectator: Spectator = {
+            socketId,
+            joinedAt: Date.now(),
+        };
+
+        room.spectators.push(spectator);
+        this.roomManager.update(roomId, room);
+        this.roomManager.associateSocket(socketId, roomId);
+
+        return { success: true, data: undefined };
+    }
+
+    /**
+     * Remove a spectator from the room
+     */
+    removeSpectator(roomId: string, socketId: string): void {
+        const room = this.roomManager.get(roomId);
+        if (!room) return;
+
+        room.spectators = room.spectators.filter((s) => s.socketId !== socketId);
+        this.roomManager.update(roomId, room);
+        this.roomManager.removeSocket(socketId);
+    }
+
+    /**
+     * Convert spectator to join request (spectator wants to play)
+     */
+    spectatorToJoinRequest(
+        roomId: string,
+        socketId: string,
+        name: string,
+        balance: number,
+    ): ServiceResult<{ requestId: string }> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        // Check if spectator
+        const spectatorIndex = room.spectators.findIndex((s) => s.socketId === socketId);
+        if (spectatorIndex === -1) {
+            return {
+                success: false,
+                error: { code: ErrorCode.NOT_IN_ROOM, message: 'Not a spectator' },
+            };
+        }
+
+        // Can only join in LOBBY phase
+        if (room.phase !== RoomPhase.LOBBY) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Cannot join after game started' },
+            };
+        }
+
+        // Remove from spectators
+        room.spectators.splice(spectatorIndex, 1);
+
+        // Create join request
+        const requestId = this.roomManager.generateRequestId();
+        const request: JoinRequest = {
+            requestId,
+            socketId,
+            name,
+            balance,
+            createdAt: Date.now(),
+        };
+
+        room.pendingRequests.push(request);
+        this.roomManager.update(roomId, room);
+
+        return { success: true, data: { requestId } };
+    }
+
     /**
      * Handle player disconnect
      */
@@ -246,6 +356,9 @@ export class RoomLobbyService {
 
         // Remove from pending requests
         room.pendingRequests = room.pendingRequests.filter((r) => r.socketId !== socketId);
+
+        // Remove from spectators
+        room.spectators = room.spectators.filter((s) => s.socketId !== socketId);
 
         // Remove from players
         const playerIndex = room.players.findIndex((p) => p.socketId === socketId);

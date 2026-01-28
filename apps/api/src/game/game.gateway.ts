@@ -18,6 +18,8 @@ import {
     RejectJoinSchema,
     UpdateBalanceSchema,
     SetBetAmountSchema,
+    SpectateRoomSchema,
+    SpectatorRequestJoinSchema,
     MarkSchema,
     NoNumberSchema,
     ErrorCode,
@@ -236,6 +238,79 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
+    }
+
+    // ==================== Spectator Mode ====================
+
+    @SubscribeMessage('room:spectate')
+    handleSpectate(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] room:spectate from ${client.id}`, payload);
+
+        const parsed = SpectateRoomSchema.safeParse(payload);
+        if (!parsed.success) {
+            const error: ErrorPayload = {
+                code: ErrorCode.VALIDATION_ERROR,
+                message: 'Invalid payload',
+                details: parsed.error.errors,
+            };
+            return { success: false, error };
+        }
+
+        const { roomId } = parsed.data;
+        const result = this.roomService.addSpectator(roomId, client.id);
+
+        if (result.success) {
+            // Join socket room to receive updates
+            client.join(roomId);
+            client.data.roomId = roomId;
+
+            // Send current room state to spectator
+            const room = this.roomService.getRoom(roomId);
+            if (room) {
+                client.emit('room:state', room);
+            }
+
+            return { success: true };
+        }
+
+        return { success: false, error: result.error };
+    }
+
+    @SubscribeMessage('spectator:requestJoin')
+    handleSpectatorRequestJoin(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] spectator:requestJoin from ${client.id}`, payload);
+
+        const parsed = SpectatorRequestJoinSchema.safeParse(payload);
+        if (!parsed.success) {
+            const error: ErrorPayload = {
+                code: ErrorCode.VALIDATION_ERROR,
+                message: 'Invalid payload',
+                details: parsed.error.errors,
+            };
+            return { success: false, error };
+        }
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return { success: false, error: { code: ErrorCode.NOT_IN_ROOM, message: 'Not spectating any room' } };
+        }
+
+        const { name, balance } = parsed.data;
+        const result = this.roomService.spectatorToJoinRequest(roomId, client.id, name, balance);
+
+        if (result.success) {
+            // Broadcast updated state (host sees pending request)
+            this.broadcastRoomState(roomId);
+            return { success: true };
+        }
+
+        return { success: false, error: result.error };
     }
 
     // ==================== Ticket Management ====================

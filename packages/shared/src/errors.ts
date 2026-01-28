@@ -10,6 +10,7 @@ export enum ErrorCode {
   ROOM_NOT_FOUND = 'ROOM_NOT_FOUND',
   ROOM_FULL = 'ROOM_FULL',
   INVALID_PHASE = 'INVALID_PHASE',
+  ALREADY_IN_ROOM = 'ALREADY_IN_ROOM',
 
   // Game flow errors
   NOT_READY_ALL = 'NOT_READY_ALL',

@@ -61,6 +61,7 @@ export class RoomManager {
             hostId,
             players: [host],
             pendingRequests: [],
+            spectators: [],
         };
 
         this.rooms.set(roomId, room);
@@ -142,5 +143,12 @@ export class RoomManager {
     isHost(room: RoomState, socketId: string): boolean {
         const player = this.findPlayerBySocketId(room, socketId);
         return player?.isHost === true;
+    }
+
+    /**
+     * Find spectator in room by socket ID
+     */
+    findSpectatorBySocketId(room: RoomState, socketId: string): { socketId: string; joinedAt: number } | undefined {
+        return room.spectators.find((s) => s.socketId === socketId);
     }
 }
