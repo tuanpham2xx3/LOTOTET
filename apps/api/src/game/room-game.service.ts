@@ -111,6 +111,25 @@ export class RoomGameService {
             };
         }
 
+        // Check if all players have responded to the previous turn
+        // Skip this check for the first turn (turnId === 0)
+        if (room.game.turnId > 0) {
+            const pendingPlayers = this.getPendingPlayers(room);
+            if (pendingPlayers.length > 0) {
+                const pendingNames = room.players
+                    .filter((p) => pendingPlayers.includes(p.id))
+                    .map((p) => p.name)
+                    .join(', ');
+                return {
+                    success: false,
+                    error: {
+                        code: ErrorCode.TURN_NOT_ACTIVE,
+                        message: `Đợi phản hồi từ: ${pendingNames}`,
+                    },
+                };
+            }
+        }
+
         // Get all available numbers (1-90 minus already drawn)
         const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
         const available = allNumbers.filter((n) => !room.game!.drawnNumbers.includes(n));
