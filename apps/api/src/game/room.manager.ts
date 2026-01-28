@@ -42,14 +42,14 @@ export class RoomManager {
     /**
      * Create a new room with the given host
      */
-    create(roomId: string, hostSocketId: string, hostName: string = 'Host'): RoomState {
+    create(roomId: string, hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): RoomState {
         const hostId = this.generatePlayerId();
 
         const host: Player = {
             id: hostId,
             socketId: hostSocketId,
             name: hostName,
-            balance: 0,
+            balance: hostBalance,
             isHost: true,
             status: PlayerStatus.APPROVED,
             ready: false,

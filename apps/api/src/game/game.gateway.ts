@@ -59,9 +59,27 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ==================== Room Management ====================
 
     @SubscribeMessage('room:create')
-    handleCreateRoom(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] room:create from ${client.id}`);
-        const { roomId, state } = this.roomService.createRoom(client.id);
+    handleCreateRoom(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] room:create from ${client.id}`, payload);
+
+        // Parse payload (optional name and balance)
+        let hostName = 'Host';
+        let hostBalance = 0;
+
+        if (payload && typeof payload === 'object') {
+            const p = payload as { name?: string; balance?: number };
+            if (p.name && typeof p.name === 'string') {
+                hostName = p.name.trim().substring(0, 20) || 'Host';
+            }
+            if (p.balance !== undefined && typeof p.balance === 'number') {
+                hostBalance = Math.max(0, p.balance);
+            }
+        }
+
+        const { roomId, state } = this.roomService.createRoom(client.id, hostName, hostBalance);
 
         client.join(roomId);
         client.data.roomId = roomId;

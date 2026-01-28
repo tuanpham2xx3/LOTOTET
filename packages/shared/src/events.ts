@@ -8,7 +8,10 @@ import type { ErrorPayload } from './errors';
 // Client -> Server events
 export interface ClientToServerEvents {
   // Room management
-  'room:create': (callback: (response: { roomId: string }) => void) => void;
+  'room:create': (
+    payload: { name?: string; balance?: number },
+    callback: (response: { roomId: string }) => void
+  ) => void;
   'room:join': (
     payload: { roomId: string; name: string; balance: number },
     callback: (response: { success: boolean; error?: ErrorPayload }) => void

@@ -14,6 +14,7 @@ interface LobbyViewProps {
     onReject: (requestId: string) => void;
     onStartGame: () => void;
     onSetBet: (amount: number) => void;
+    onUpdateBalance: (playerId: string, balance: number) => void;
 }
 
 export function LobbyView({
@@ -26,6 +27,7 @@ export function LobbyView({
     onReject,
     onStartGame,
     onSetBet,
+    onUpdateBalance,
 }: LobbyViewProps) {
     const allReady = roomState.players.every((p) => p.ready);
     const canStart = isHost && allReady && roomState.players.length >= 2;
@@ -105,9 +107,29 @@ export function LobbyView({
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-slate-400">
-                                            {player.balance.toLocaleString()}đ
-                                        </span>
+                                        {isHost ? (
+                                            <button
+                                                onClick={() => {
+                                                    const newBalance = prompt(
+                                                        `Nhập số dư mới cho ${player.name}:`,
+                                                        String(player.balance)
+                                                    );
+                                                    if (newBalance !== null) {
+                                                        const parsed = parseInt(newBalance, 10);
+                                                        if (!isNaN(parsed) && parsed >= 0) {
+                                                            onUpdateBalance(player.id, parsed);
+                                                        }
+                                                    }
+                                                }}
+                                                className="text-sm text-indigo-400 hover:text-indigo-300 underline"
+                                            >
+                                                {player.balance.toLocaleString()}đ
+                                            </button>
+                                        ) : (
+                                            <span className="text-sm text-slate-400">
+                                                {player.balance.toLocaleString()}đ
+                                            </span>
+                                        )}
                                         {player.ready ? (
                                             <span className="badge badge-success">✓</span>
                                         ) : (

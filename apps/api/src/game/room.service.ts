@@ -22,9 +22,9 @@ export class RoomService {
     /**
      * Create a new room
      */
-    createRoom(hostSocketId: string): { roomId: string; state: RoomState } {
+    createRoom(hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): { roomId: string; state: RoomState } {
         const roomId = this.roomManager.generateRoomId();
-        const state = this.roomManager.create(roomId, hostSocketId, 'Host');
+        const state = this.roomManager.create(roomId, hostSocketId, hostName, hostBalance);
         return { roomId, state };
     }
 

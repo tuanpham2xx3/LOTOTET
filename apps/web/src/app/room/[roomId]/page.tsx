@@ -144,6 +144,10 @@ export default function RoomPage() {
         router.push('/');
     };
 
+    const handleUpdateBalance = (playerId: string, balance: number) => {
+        socket?.emit('room:updateBalance', { playerId, balance });
+    };
+
     // ==================== Render ====================
 
     // Loading state
@@ -190,10 +194,10 @@ export default function RoomPage() {
                     <div className="flex items-center gap-2">
                         <span
                             className={`badge ${roomState.phase === RoomPhase.LOBBY
-                                    ? 'badge-accent'
-                                    : roomState.phase === RoomPhase.PLAYING
-                                        ? 'badge-success'
-                                        : 'badge-warn'
+                                ? 'badge-accent'
+                                : roomState.phase === RoomPhase.PLAYING
+                                    ? 'badge-success'
+                                    : 'badge-warn'
                                 }`}
                         >
                             {roomState.phase === RoomPhase.LOBBY && '🏠 Phòng chờ'}
@@ -217,6 +221,7 @@ export default function RoomPage() {
                         onReject={handleReject}
                         onStartGame={handleStartGame}
                         onSetBet={handleSetBet}
+                        onUpdateBalance={handleUpdateBalance}
                     />
                 )}
 

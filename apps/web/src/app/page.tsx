@@ -53,8 +53,8 @@ export default function HomePage() {
         }
       });
 
-      // Create room
-      s.emit('room:create', (response) => {
+      // Create room with name and balance
+      s.emit('room:create', { name, balance }, (response) => {
         if (response.roomId) {
           router.push(`/room/${response.roomId}`);
         } else {
@@ -135,8 +135,8 @@ export default function HomePage() {
             <button
               onClick={() => setMode('create')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'create'
-                  ? 'bg-indigo-500 text-white'
-                  : 'text-slate-400 hover:text-white'
+                ? 'bg-indigo-500 text-white'
+                : 'text-slate-400 hover:text-white'
                 }`}
             >
               Tạo phòng
@@ -144,8 +144,8 @@ export default function HomePage() {
             <button
               onClick={() => setMode('join')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'join'
-                  ? 'bg-indigo-500 text-white'
-                  : 'text-slate-400 hover:text-white'
+                ? 'bg-indigo-500 text-white'
+                : 'text-slate-400 hover:text-white'
                 }`}
             >
               Vào phòng
