@@ -32,6 +32,9 @@ export enum ErrorCode {
 
   // Balance errors
   INSUFFICIENT_BALANCE = 'INSUFFICIENT_BALANCE',
+
+  // Kick error
+  KICKED = 'KICKED',
 }
 
 /**

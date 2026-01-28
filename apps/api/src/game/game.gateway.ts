@@ -229,6 +229,54 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
+    @SubscribeMessage('room:kickPlayer')
+    handleKickPlayer(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] room:kickPlayer from ${client.id}`, payload);
+
+        // Validate payload
+        if (!payload || typeof payload !== 'object' || !('playerId' in payload)) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Invalid payload');
+        }
+
+        const { playerId } = payload as { playerId: string };
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
+        }
+
+        const result = this.roomService.kickPlayer(roomId, playerId, client.id);
+
+        if (result.success) {
+            const { kickedSocketId, kickedName } = result.data;
+
+            // Notify kicked player before disconnecting
+            const kickedSocket = this.server.sockets.sockets.get(kickedSocketId);
+            if (kickedSocket) {
+                // Emit special kicked event for proper handling on client
+                kickedSocket.emit('player:kicked', {
+                    reason: 'Bạn đã bị đuổi khỏi phòng',
+                });
+                kickedSocket.leave(roomId);
+
+                // Delay disconnect to allow client to receive and process event
+                setTimeout(() => {
+                    kickedSocket.disconnect(true);
+                }, 1000);
+            }
+
+            // Broadcast updated state
+            this.broadcastRoomState(roomId);
+
+            return { success: true, kickedName };
+        } else {
+            return this.sendError(client, result.error.code, result.error.message);
+        }
+    }
+
     @SubscribeMessage('room:reconnect')
     handleReconnect(
         @ConnectedSocket() client: TypedSocket,

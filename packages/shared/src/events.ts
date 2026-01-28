@@ -22,6 +22,7 @@ export interface ClientToServerEvents {
     playerId: string;
     balance: number;
   }) => void;
+  'room:kickPlayer': (payload: { playerId: string }) => void;
   'room:setBetAmount': (payload: { amount: number }) => void;
   'room:reconnect': (
     payload: { roomId: string; playerId: string },
@@ -68,6 +69,9 @@ export interface ServerToClientEvents {
   'game:ended': (payload: {
     winner: { playerId: string; playerName: string; winningRow: number };
   }) => void;
+
+  // Player events
+  'player:kicked': (payload: { reason: string }) => void;
 
   // Error handling
   error: (payload: ErrorPayload) => void;

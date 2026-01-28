@@ -15,6 +15,7 @@ interface LobbyViewProps {
     onStartGame: () => void;
     onSetBet: (amount: number) => void;
     onUpdateBalance: (playerId: string, balance: number) => void;
+    onKickPlayer: (playerId: string) => void;
 }
 
 export function LobbyView({
@@ -28,6 +29,7 @@ export function LobbyView({
     onStartGame,
     onSetBet,
     onUpdateBalance,
+    onKickPlayer,
 }: LobbyViewProps) {
     const allReady = roomState.players.every((p) => p.ready);
     const canStart = isHost && allReady && roomState.players.length >= 2;
@@ -134,6 +136,20 @@ export function LobbyView({
                                             <span className="badge badge-success">✓</span>
                                         ) : (
                                             <span className="badge">Chờ</span>
+                                        )}
+                                        {/* Kick button - only for host, not on self */}
+                                        {isHost && !player.isHost && (
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm(`Đuổi ${player.name} khỏi phòng?`)) {
+                                                        onKickPlayer(player.id);
+                                                    }
+                                                }}
+                                                className="text-red-400 hover:text-red-300 ml-1"
+                                                title="Đuổi"
+                                            >
+                                                ✕
+                                            </button>
                                         )}
                                     </div>
                                 </div>

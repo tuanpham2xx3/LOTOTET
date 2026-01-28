@@ -72,6 +72,10 @@ export class RoomService {
         return this.lobbyService.setBetAmount(roomId, amount, hostSocketId);
     }
 
+    kickPlayer(roomId: string, playerId: string, hostSocketId: string) {
+        return this.lobbyService.kickPlayer(roomId, playerId, hostSocketId);
+    }
+
     // ==================== Spectator Operations (delegated) ====================
 
     addSpectator(roomId: string, socketId: string) {

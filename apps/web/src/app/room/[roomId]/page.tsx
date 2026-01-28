@@ -50,6 +50,25 @@ export default function RoomPage() {
         };
     }, [socket]);
 
+    // Listen for kicked event
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleKicked = (payload: { reason: string }) => {
+            console.log('[Room] Kicked:', payload);
+            alert(payload.reason || 'Bạn đã bị đuổi khỏi phòng');
+            reset();
+            localStorage.removeItem(`lototet_player_${roomId}`);
+            router.push('/');
+        };
+
+        socket.on('player:kicked', handleKicked);
+
+        return () => {
+            socket.off('player:kicked', handleKicked);
+        };
+    }, [socket, reset, roomId, router]);
+
     // Reconnect to room if needed
     useEffect(() => {
         if (!socket || !connected) return;
@@ -148,6 +167,10 @@ export default function RoomPage() {
         socket?.emit('room:updateBalance', { playerId, balance });
     };
 
+    const handleKickPlayer = (playerId: string) => {
+        socket?.emit('room:kickPlayer', { playerId });
+    };
+
     // ==================== Render ====================
 
     // Loading state
@@ -222,6 +245,7 @@ export default function RoomPage() {
                         onStartGame={handleStartGame}
                         onSetBet={handleSetBet}
                         onUpdateBalance={handleUpdateBalance}
+                        onKickPlayer={handleKickPlayer}
                     />
                 )}
 

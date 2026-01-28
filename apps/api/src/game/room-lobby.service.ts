@@ -243,6 +243,67 @@ export class RoomLobbyService {
         return { success: true, data: undefined };
     }
 
+    /**
+     * Kick a player from the room (host only, LOBBY phase only)
+     */
+    kickPlayer(
+        roomId: string,
+        playerId: string,
+        hostSocketId: string,
+    ): ServiceResult<{ kickedSocketId: string; kickedName: string }> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        if (!this.roomManager.isHost(room, hostSocketId)) {
+            return {
+                success: false,
+                error: { code: ErrorCode.NOT_HOST, message: 'Only host can kick players' },
+            };
+        }
+
+        if (room.phase !== RoomPhase.LOBBY) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Chỉ có thể đuổi người chơi trong phòng chờ' },
+            };
+        }
+
+        const playerIndex = room.players.findIndex((p) => p.id === playerId);
+
+        if (playerIndex === -1) {
+            return {
+                success: false,
+                error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Player not found' },
+            };
+        }
+
+        const player = room.players[playerIndex];
+
+        // Cannot kick yourself (host)
+        if (player.isHost) {
+            return {
+                success: false,
+                error: { code: ErrorCode.NOT_HOST, message: 'Không thể đuổi chính mình' },
+            };
+        }
+
+        const kickedSocketId = player.socketId;
+        const kickedName = player.name;
+
+        // Remove player from room
+        room.players.splice(playerIndex, 1);
+        this.roomManager.removeSocket(kickedSocketId);
+        this.roomManager.update(roomId, room);
+
+        return { success: true, data: { kickedSocketId, kickedName } };
+    }
+
     // ==================== Spectator Management ====================
 
     /**
