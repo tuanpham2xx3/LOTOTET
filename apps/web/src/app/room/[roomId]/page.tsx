@@ -11,8 +11,9 @@ import {
     useCurrentTurn,
     useConnected,
 } from '@/stores/gameStore';
-import { LobbyView, PlayingView, EndedView } from '@/components/Room';
+import { LobbyView, PlayingView, EndedView, GameMenu } from '@/components/Room';
 import { ChatBox } from '@/components/Chat';
+import { formatNumber } from '@/lib/utils';
 
 export default function RoomPage() {
     const params = useParams();
@@ -26,6 +27,7 @@ export default function RoomPage() {
     const isHost = useIsHost();
     const currentTurn = useCurrentTurn();
     const [pendingPlayerIds, setPendingPlayerIds] = useState<string[]>([]);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     // Connect on mount
     useEffect(() => {
@@ -200,37 +202,50 @@ export default function RoomPage() {
     return (
         <main className="min-h-screen">
             {/* Header */}
-            <header className="sticky top-0 z-50 glass border-b border-white/10">
+            <header className="sticky top-0 z-30 glass border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <span className="text-xl">🎲</span>
-                        <div>
-                            <span className="font-mono text-indigo-400 text-sm">
-                                {roomState.roomId}
+                    {/* Left: Player count */}
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-lg">👤</span>
+                            <span className="font-bold text-white">
+                                {roomState.players.length}
                             </span>
-                            <span className="mx-2 text-slate-600">•</span>
-                            <span className="text-sm text-slate-400">
-                                {roomState.players.length} người chơi
+                        </div>
+                        <div className="h-5 w-px bg-white/20" />
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-amber-400 font-bold">
+                                {formatNumber(roomState.betAmount ?? 0)}đ
                             </span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <span
-                            className={`badge ${roomState.phase === RoomPhase.LOBBY
-                                ? 'badge-accent'
-                                : roomState.phase === RoomPhase.PLAYING
-                                    ? 'badge-success'
-                                    : 'badge-warn'
-                                }`}
-                        >
-                            {roomState.phase === RoomPhase.LOBBY && '🏠 Phòng chờ'}
-                            {roomState.phase === RoomPhase.PLAYING && '🎮 Đang chơi'}
-                            {roomState.phase === RoomPhase.ENDED && '🏁 Kết thúc'}
-                        </span>
-                    </div>
+                    {/* Right: Menu button */}
+                    <button
+                        onClick={() => setMenuOpen(true)}
+                        className="text-2xl text-white hover:text-indigo-400 transition-colors p-2"
+                        title="Menu"
+                    >
+                        ☰
+                    </button>
                 </div>
             </header>
+
+            {/* Game Menu Drawer */}
+            <GameMenu
+                isOpen={menuOpen}
+                onClose={() => setMenuOpen(false)}
+                roomState={roomState}
+                myPlayer={myPlayer}
+                isHost={isHost}
+                canStart={isHost && roomState.players.every(p => p.ready) && roomState.players.length >= 2}
+                onSetBet={handleSetBet}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onStartGame={handleStartGame}
+                onUpdateBalance={handleUpdateBalance}
+                onKickPlayer={handleKickPlayer}
+            />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto p-4">
