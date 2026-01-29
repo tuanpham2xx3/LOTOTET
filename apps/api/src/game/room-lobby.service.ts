@@ -237,8 +237,10 @@ export class RoomLobbyService {
             };
         }
 
+        console.log(`[Lobby] Setting betAmount: ${room.betAmount} -> ${amount}`);
         room.betAmount = amount;
         this.roomManager.update(roomId, room);
+        console.log(`[Lobby] betAmount set successfully: ${room.betAmount}`);
 
         return { success: true, data: undefined };
     }

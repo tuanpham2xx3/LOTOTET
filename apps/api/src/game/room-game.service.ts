@@ -55,6 +55,7 @@ export class RoomGameService {
 
         // Validate all players have enough balance for bet
         const betAmount = room.betAmount || 0;
+        console.log(`[Game] Starting game. room.betAmount = ${room.betAmount}, betAmount = ${betAmount}`);
 
         // Save initial balances for leaderboard
         room.initialBalances = {};

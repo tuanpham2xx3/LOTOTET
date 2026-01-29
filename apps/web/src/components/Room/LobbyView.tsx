@@ -44,18 +44,28 @@ export function LobbyView({
                         Room ID: <span className="font-mono text-indigo-400">{roomState.roomId}</span>
                     </p>
                 </div>
-                {isHost && (
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="number"
-                            value={roomState.betAmount || 10000}
-                            onChange={(e) => onSetBet(Number(e.target.value))}
-                            className="input w-32 text-right"
-                            placeholder="Bet"
-                        />
-                        <span className="text-slate-400">VND</span>
-                    </div>
-                )}
+
+                {/* Bet Amount - Host can edit, others can view */}
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-sm">💰 Cược:</span>
+                    {isHost ? (
+                        <>
+                            <input
+                                type="number"
+                                value={roomState.betAmount ?? 0}
+                                onChange={(e) => onSetBet(Number(e.target.value))}
+                                className="input w-32 text-right"
+                                placeholder="0"
+                                min="0"
+                            />
+                            <span className="text-slate-400">VND</span>
+                        </>
+                    ) : (
+                        <span className="text-lg font-bold text-amber-400">
+                            {(roomState.betAmount ?? 0).toLocaleString()}đ
+                        </span>
+                    )}
+                </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
