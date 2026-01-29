@@ -177,7 +177,7 @@ export default function RoomPage() {
     // Loading state
     if (!connected) {
         return (
-            <main className="min-h-screen flex items-center justify-center gradient-dark">
+            <main className="min-h-screen flex items-center justify-center">
                 <div className="text-center animate-fadeIn">
                     <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
                     <p className="text-slate-400">Đang kết nối...</p>
@@ -188,7 +188,7 @@ export default function RoomPage() {
 
     if (!roomState) {
         return (
-            <main className="min-h-screen flex items-center justify-center gradient-dark">
+            <main className="min-h-screen flex items-center justify-center">
                 <div className="text-center animate-fadeIn">
                     <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
                     <p className="text-slate-400">Đang tải phòng...</p>
@@ -198,7 +198,7 @@ export default function RoomPage() {
     }
 
     return (
-        <main className="min-h-screen gradient-dark texture-grid">
+        <main className="min-h-screen">
             {/* Header */}
             <header className="sticky top-0 z-50 glass border-b border-white/10">
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">

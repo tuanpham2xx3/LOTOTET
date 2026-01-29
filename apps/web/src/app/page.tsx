@@ -118,7 +118,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 gradient-dark texture-grid">
+    <main className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fadeInUp">
         {/* Logo */}
         <div className="text-center mb-8">
