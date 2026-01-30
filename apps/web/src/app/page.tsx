@@ -176,7 +176,7 @@ export default function HomePage() {
             )}
 
             <div>
-              <label className="input-label-traditional">Số dư (VND)</label>
+              <label className="input-label-traditional">Số dư (🧧)</label>
               <input
                 type="number"
                 value={balance}

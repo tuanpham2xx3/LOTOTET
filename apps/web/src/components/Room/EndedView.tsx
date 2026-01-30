@@ -63,7 +63,7 @@ export function EndedView({
                     </p>
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">
                         <span>+{formatNumber(winner.prize)}</span>
-                        <span className="text-sm">VND</span>
+                        <span className="text-sm">🧧</span>
                     </div>
                 </div>
 
@@ -103,7 +103,7 @@ export function EndedView({
                                                 {player.id === winner.playerId && ' 🏆'}
                                             </span>
                                             <div className="text-xs text-slate-500">
-                                                Số dư: {formatNumber(player.balance)}đ
+                                                Số dư: {formatNumber(player.balance)}🧧
                                             </div>
                                         </div>
                                     </div>
@@ -115,7 +115,7 @@ export function EndedView({
                                                 ? 'text-red-400'
                                                 : 'text-slate-400',
                                     )}>
-                                        {profitLoss >= 0 ? '+' : ''}{formatNumber(profitLoss)}đ
+                                        {profitLoss >= 0 ? '+' : ''}{formatNumber(profitLoss)}🧧
                                     </span>
                                 </div>
                             ))}

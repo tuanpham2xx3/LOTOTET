@@ -6,6 +6,7 @@ import {
     Player,
     ErrorCode,
     ErrorPayload,
+    generateTicket,
 } from '@lototet/shared';
 
 export type ServiceResult<T> =
@@ -138,6 +139,55 @@ export class RoomGameService {
                     },
                 };
             }
+        }
+
+        // Get all available numbers (1-90 minus already drawn)
+        const allNumbers = Array.from({ length: 90 }, (_, i) => i + 1);
+        const available = allNumbers.filter((n) => !room.game!.drawnNumbers.includes(n));
+
+        if (available.length === 0) {
+            return {
+                success: false,
+                error: { code: ErrorCode.TURN_NOT_ACTIVE, message: 'No more numbers' },
+            };
+        }
+
+        // Draw random number
+        const number = available[Math.floor(Math.random() * available.length)];
+        room.game.drawnNumbers.push(number);
+        room.game.turnId++;
+        room.game.activeNumber = number;
+        room.game.turnResponses = {};
+
+        // Reset player turn responses
+        for (const player of room.players) {
+            player.respondedTurnId = undefined;
+        }
+
+        this.roomManager.update(roomId, room);
+
+        return { success: true, data: { number, turnId: room.game.turnId } };
+    }
+
+    /**
+     * Auto-draw next number (called by server when all players respond)
+     * Similar to drawNumber but doesn't require host authentication
+     */
+    autoDrawNumber(roomId: string): ServiceResult<{ number: number; turnId: number }> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        if (room.phase !== RoomPhase.PLAYING || !room.game) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Game not active' },
+            };
         }
 
         // Get all available numbers (1-90 minus already drawn)
@@ -474,8 +524,8 @@ export class RoomGameService {
         room.winner = undefined;
 
         for (const player of room.players) {
-            player.ticket = undefined;
-            player.marked = undefined;
+            player.ticket = generateTicket();
+            player.marked = Array(9).fill(null).map(() => Array(9).fill(false));
             player.ready = false;
             player.respondedTurnId = undefined;
         }

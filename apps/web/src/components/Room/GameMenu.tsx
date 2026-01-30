@@ -57,36 +57,51 @@ export function GameMenu({
             {/* Drawer */}
             <div
                 className={cn(
-                    'fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-slate-900 border-l border-white/10 z-50',
+                    'fixed top-0 right-0 h-full w-80 max-w-[85vw] z-50',
                     'transform transition-transform duration-300 ease-out',
                     'flex flex-col overflow-hidden',
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 )}
+                style={{
+                    backgroundColor: 'rgba(74, 4, 4, 0.85)',
+                    borderLeft: '3px solid #d4a000',
+                }}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/10">
-                    <h2 className="text-lg font-bold text-white">Menu</h2>
+                {/* Header - same style as web header */}
+                <div
+                    className="flex items-center justify-end px-4 py-3"
+                    style={{
+                        backgroundColor: 'rgba(74, 4, 4, 0.85)',
+                        borderBottom: '2px solid #d4a000'
+                    }}
+                >
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-white text-2xl"
+                        className="hover:opacity-80 transition-opacity p-1"
                     >
-                        ×
+                        <img src="/menu_btn.png" alt="Đóng" className="w-8 h-8" />
                     </button>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {/* Balance Info */}
-                    <div className="bg-slate-800/50 rounded-lg p-3">
+                    <div
+                        className="rounded-lg p-3"
+                        style={{
+                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                            border: '2px solid #d4a000'
+                        }}
+                    >
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <div className="text-xs text-slate-400 mb-1">💰 Số dư của bạn</div>
+                                <div className="text-xs text-[#d4a000] mb-1">💰 Số dư của bạn</div>
                                 <div className="text-amber-400 font-bold text-lg">
                                     {myPlayer?.balance.toLocaleString() ?? 0}đ
                                 </div>
                             </div>
                             <div>
-                                <div className="text-xs text-slate-400 mb-1">🏆 Tổng pot</div>
+                                <div className="text-xs text-[#d4a000] mb-1">🏆 Tổng pot</div>
                                 <div className="text-emerald-400 font-bold text-lg">
                                     {((roomState.betAmount || 0) * roomState.players.length).toLocaleString()}đ
                                 </div>
@@ -96,8 +111,14 @@ export function GameMenu({
 
                     {/* Bet Amount - Host Only */}
                     {isHost && (
-                        <div className="bg-slate-800/50 rounded-lg p-3">
-                            <label className="block text-sm text-slate-400 mb-2">
+                        <div
+                            className="rounded-lg p-3"
+                            style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                border: '2px solid #d4a000'
+                            }}
+                        >
+                            <label className="block text-sm text-[#d4a000] mb-2">
                                 Mức cược
                             </label>
                             <div className="flex items-center gap-2">
@@ -105,18 +126,24 @@ export function GameMenu({
                                     type="number"
                                     value={betInput}
                                     onChange={(e) => handleBetChange(e.target.value)}
-                                    className="input flex-1"
+                                    className="input-traditional flex-1"
                                     placeholder="0"
                                     min="0"
                                 />
-                                <span className="text-slate-400">VND</span>
+                                <span className="text-[#d4a000]">🧧</span>
                             </div>
                         </div>
                     )}
 
                     {/* Players List */}
-                    <div className="bg-slate-800/50 rounded-lg p-3">
-                        <h3 className="text-sm font-medium text-slate-400 mb-3">
+                    <div
+                        className="rounded-lg p-3"
+                        style={{
+                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                            border: '2px solid #d4a000'
+                        }}
+                    >
+                        <h3 className="text-sm font-medium text-[#d4a000] mb-3">
                             Người chơi ({roomState.players.length})
                         </h3>
                         <div className="space-y-2">
@@ -225,16 +252,14 @@ export function GameMenu({
 
                 {/* Footer - Start Game Button */}
                 {isHost && (
-                    <div className="p-4 border-t border-white/10">
+                    <div
+                        className="p-4"
+                        style={{ borderTop: '2px solid #d4a000' }}
+                    >
                         <button
                             onClick={onStartGame}
                             disabled={!canStart}
-                            className={cn(
-                                'w-full btn btn-lg',
-                                canStart
-                                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                                    : 'btn-secondary opacity-50'
-                            )}
+                            className="w-full btn-traditional-red py-3 text-lg"
                         >
                             Bắt đầu trò chơi
                         </button>

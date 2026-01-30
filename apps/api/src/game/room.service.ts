@@ -110,6 +110,10 @@ export class RoomService {
         return this.gameService.drawNumber(roomId, hostSocketId);
     }
 
+    autoDrawNumber(roomId: string) {
+        return this.gameService.autoDrawNumber(roomId);
+    }
+
     markCell(roomId: string, socketId: string, turnId: number, row: number, col: number) {
         return this.gameService.markCell(roomId, socketId, turnId, row, col);
     }

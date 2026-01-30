@@ -217,7 +217,7 @@ export default function RoomPage() {
                         <div className="h-5 w-px bg-white/20" />
                         <div className="flex items-center gap-1.5">
                             <span className="text-amber-400 font-bold">
-                                {formatNumber(roomState.betAmount ?? 0)}đ
+                                {formatNumber(roomState.betAmount ?? 0)}🧧
                             </span>
                         </div>
                     </div>
@@ -225,10 +225,10 @@ export default function RoomPage() {
                     {/* Right: Menu button */}
                     <button
                         onClick={() => setMenuOpen(true)}
-                        className="text-2xl text-white hover:text-indigo-400 transition-colors p-2"
+                        className="hover:opacity-80 transition-opacity p-1"
                         title="Menu"
                     >
-                        ☰
+                        <img src="/menu_btn.png" alt="Menu" className="w-8 h-8" />
                     </button>
                 </div>
             </header>

@@ -547,6 +547,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
 
             this.broadcastRoomState(roomId);
+            this.checkAndAutoDrawNextNumber(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
@@ -595,6 +596,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
 
             this.broadcastRoomState(roomId);
+            this.checkAndAutoDrawNextNumber(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
@@ -631,6 +633,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
 
             this.broadcastRoomState(roomId);
+            this.checkAndAutoDrawNextNumber(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
@@ -722,5 +725,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     private sendError(client: TypedSocket, code: ErrorCode, message: string) {
         client.emit('error', { code, message });
+    }
+
+    /**
+     * Check if all players have responded and auto-draw the next number
+     */
+    private checkAndAutoDrawNextNumber(roomId: string) {
+        const room = this.roomService.getRoom(roomId);
+        if (!room?.game || room.game.turnId === 0) return;
+
+        const pendingPlayerIds = this.roomService.getPendingPlayers(room);
+        if (pendingPlayerIds.length === 0) {
+            // All players responded, auto-draw next number
+            const drawResult = this.roomService.autoDrawNumber(roomId);
+            if (drawResult.success) {
+                // Emit turn:new to all players
+                this.server.to(roomId).emit('turn:new', {
+                    turnId: drawResult.data.turnId,
+                    number: drawResult.data.number,
+                });
+                // Broadcast updated room state
+                this.broadcastRoomState(roomId);
+            }
+        }
     }
 }

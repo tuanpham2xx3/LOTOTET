@@ -27,6 +27,7 @@ module.exports = {
         'confetti': 'confetti 3s ease-out forwards',
         'glow-pulse': 'glow-pulse 1.5s ease-in-out infinite',
         'number-reveal': 'number-reveal 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        'slideInLeft': 'slideInLeft 0.3s ease-out',
       },
       keyframes: {
         'pulse-number': {
@@ -63,6 +64,10 @@ module.exports = {
           '0%': { transform: 'scale(0) rotate(-180deg)', opacity: '0' },
           '50%': { transform: 'scale(1.2) rotate(0deg)' },
           '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+        },
+        'slideInLeft': {
+          '0%': { transform: 'translateX(-100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
         },
       },
       backdropBlur: {
