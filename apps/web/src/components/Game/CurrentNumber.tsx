@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, useRef } from 'react';
 
 interface CurrentNumberProps {
-    number: number | null;
+    number?: number;
     turnId?: number;
 }
 
@@ -13,13 +13,13 @@ const GIF_DURATION = 2000;
 
 export function CurrentNumber({ number, turnId }: CurrentNumberProps) {
     const [isRolling, setIsRolling] = useState(false);
-    const [displayNumber, setDisplayNumber] = useState<number | null>(null);
+    const [displayNumber, setDisplayNumber] = useState<number | undefined>(undefined);
     const [gifKey, setGifKey] = useState(0); // Force reload GIF
     const prevTurnIdRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
         // Khi có turnId mới và number mới -> play animation
-        if (turnId !== undefined && turnId !== prevTurnIdRef.current && number !== null) {
+        if (turnId !== undefined && turnId !== prevTurnIdRef.current && number !== undefined) {
             setIsRolling(true);
             setGifKey(prev => prev + 1); // Force reload GIF
             prevTurnIdRef.current = turnId;
@@ -31,12 +31,12 @@ export function CurrentNumber({ number, turnId }: CurrentNumberProps) {
             }, GIF_DURATION);
 
             return () => clearTimeout(timer);
-        } else if (number !== null && !isRolling) {
+        } else if (number !== undefined && !isRolling) {
             setDisplayNumber(number);
         }
     }, [turnId, number, isRolling]);
 
-    if (number === null && !isRolling) {
+    if (number === undefined && !isRolling) {
         return (
             <div className="text-center p-6">
                 <p className="text-slate-500 text-sm mb-2">Số hiện tại</p>
@@ -66,7 +66,7 @@ export function CurrentNumber({ number, turnId }: CurrentNumberProps) {
             )}
 
             {/* Số hiện tại sau khi animation xong */}
-            {!isRolling && displayNumber !== null && (
+            {!isRolling && displayNumber !== undefined && (
                 <div
                     key={displayNumber}
                     className={cn(

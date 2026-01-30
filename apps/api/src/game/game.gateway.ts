@@ -552,6 +552,54 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
+    @SubscribeMessage('turn:markAny')
+    handleTurnMarkAny(
+        @ConnectedSocket() client: TypedSocket,
+        @MessageBody() payload: unknown,
+    ) {
+        console.log(`[Gateway] turn:markAny from ${client.id}`, payload);
+
+        // Validate payload - only need row and col
+        if (!payload || typeof payload !== 'object' || !('row' in payload) || !('col' in payload)) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Invalid payload');
+        }
+
+        const { row, col } = payload as { row: number; col: number };
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
+        }
+
+        const result = this.roomService.markAnyDrawnNumber(
+            roomId,
+            client.id,
+            row,
+            col,
+        );
+
+        if (result.success) {
+            // Broadcast turn progress
+            const room = this.roomService.getRoom(roomId);
+            if (room?.game) {
+                const pendingPlayerIds = this.roomService.getPendingPlayers(room);
+                this.server.to(roomId).emit('turn:progress', {
+                    turnId: room.game.turnId,
+                    pendingPlayerIds,
+                });
+
+                // Broadcast waiting board update
+                this.server.to(roomId).emit('waiting:update', {
+                    waitingBoard: room.game.waitingBoard,
+                });
+            }
+
+            this.broadcastRoomState(roomId);
+        } else {
+            return this.sendError(client, result.error.code, result.error.message);
+        }
+    }
+
     @SubscribeMessage('turn:noNumber')
     handleTurnNoNumber(
         @ConnectedSocket() client: TypedSocket,

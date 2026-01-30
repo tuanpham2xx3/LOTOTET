@@ -29,6 +29,12 @@ export function PlayingView({
     onBingo,
 }: PlayingViewProps) {
     const game = roomState.game;
+    const drawnNumbers = game?.drawnNumbers || [];
+
+    // Get the display number - prefer currentTurn.number, fallback to latest drawn number
+    const displayNumber = currentTurn?.number ?? (drawnNumbers.length > 0 ? drawnNumbers[drawnNumbers.length - 1] : undefined);
+    const displayTurnId = currentTurn?.turnId ?? (drawnNumbers.length > 0 ? drawnNumbers.length : undefined);
+
     const hasResponded = myPlayer?.respondedTurnId === currentTurn?.turnId;
     const isPending = pendingPlayerIds.includes(myPlayer?.id || '');
     const betAmount = roomState.betAmount || 0;
@@ -56,12 +62,13 @@ export function PlayingView({
         return false;
     })();
 
-    // Handle cell click - find current number and mark
+    // Handle cell click - mark any drawn number
     const handleCellClick = (row: number, col: number) => {
-        if (!currentTurn || hasResponded) return;
-
         const cellValue = myPlayer?.ticket?.[row]?.[col];
-        if (cellValue === currentTurn.number) {
+        const drawnNumbers = game?.drawnNumbers || [];
+
+        // Allow marking if cell contains a drawn number
+        if (cellValue !== null && cellValue !== undefined && drawnNumbers.includes(cellValue)) {
             vibrate(50);
             onMark(row, col);
         }
@@ -100,8 +107,8 @@ export function PlayingView({
                 <div className="card p-4">
                     {/* Số hiện tại */}
                     <CurrentNumber
-                        number={currentTurn?.number ?? null}
-                        turnId={currentTurn?.turnId}
+                        number={displayNumber}
+                        turnId={displayTurnId}
                     />
 
                     {/* Action Buttons - ngay dưới số */}
@@ -111,15 +118,15 @@ export function PlayingView({
                             onNoNumber={onNoNumber}
                             isHost={isHost}
                             hasResponded={hasResponded}
-                            currentNumber={currentTurn?.number}
+                            currentNumber={displayNumber}
                         />
                     </div>
 
                     {/* Drawn Numbers */}
                     <div className="mt-4 pt-4 border-t border-white/10">
                         <DrawnNumbers
-                            numbers={game?.drawnNumbers || []}
-                            currentNumber={currentTurn?.number}
+                            numbers={drawnNumbers}
+                            currentNumber={displayNumber}
                         />
                     </div>
                 </div>
@@ -138,9 +145,9 @@ export function PlayingView({
                         <TicketGrid
                             ticket={myPlayer?.ticket}
                             marked={myPlayer?.marked}
-                            currentNumber={currentTurn?.number}
+                            currentNumber={displayNumber}
+                            drawnNumbers={drawnNumbers}
                             onCellClick={handleCellClick}
-                            readonly={hasResponded}
                         />
                     </div>
                 </div>
@@ -179,9 +186,9 @@ export function PlayingView({
                         <TicketGrid
                             ticket={myPlayer?.ticket}
                             marked={myPlayer?.marked}
-                            currentNumber={currentTurn?.number}
+                            currentNumber={displayNumber}
+                            drawnNumbers={drawnNumbers}
                             onCellClick={handleCellClick}
-                            readonly={hasResponded}
                         />
                     </div>
                 </div>
@@ -200,8 +207,8 @@ export function PlayingView({
                     <div className="p-8 sm:p-10 md:p-12">
                         {/* Số hiện tại */}
                         <CurrentNumber
-                            number={currentTurn?.number ?? null}
-                            turnId={currentTurn?.turnId}
+                            number={displayNumber}
+                            turnId={displayTurnId}
                         />
 
                         {/* Action Buttons - ngay dưới số */}
@@ -211,15 +218,15 @@ export function PlayingView({
                                 onNoNumber={onNoNumber}
                                 isHost={isHost}
                                 hasResponded={hasResponded}
-                                currentNumber={currentTurn?.number}
+                                currentNumber={displayNumber}
                             />
                         </div>
 
                         {/* Drawn Numbers */}
                         <div className="mt-4 pt-4 border-t border-white/10">
                             <DrawnNumbers
-                                numbers={game?.drawnNumbers || []}
-                                currentNumber={currentTurn?.number}
+                                numbers={drawnNumbers}
+                                currentNumber={displayNumber}
                             />
                         </div>
                     </div>

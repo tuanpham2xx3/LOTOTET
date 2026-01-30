@@ -6,6 +6,7 @@ interface TicketCellProps {
     value: number | null;
     marked: boolean;
     isCurrentNumber?: boolean;
+    isDrawn?: boolean;
     onClick?: () => void;
     disabled?: boolean;
 }
@@ -14,6 +15,7 @@ export function TicketCell({
     value,
     marked,
     isCurrentNumber = false,
+    isDrawn = false,
     onClick,
     disabled = false,
 }: TicketCellProps) {
@@ -45,14 +47,21 @@ export function TicketCell({
                 ],
                 // Marked state - use SVG background
                 marked && 'text-[#5D4037]',
+                // Current number highlight (strongest)
                 isCurrentNumber && !marked && [
                     'ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-900',
                     'animate-pulse-number',
                     'bg-amber-500/20',
                     'rounded-lg',
                 ],
+                // Drawn but not marked (recommend) - blinking yellow
+                isDrawn && !marked && !isCurrentNumber && [
+                    'ring-2 ring-yellow-400 ring-offset-1 ring-offset-slate-900',
+                    'animate-pulse',
+                    'bg-yellow-400/30',
+                ],
                 // Disabled
-                disabled && !marked && 'opacity-50 cursor-not-allowed',
+                disabled && !marked && !isDrawn && 'opacity-50 cursor-not-allowed',
             )}
             style={marked ? {
                 backgroundImage: 'url(/num_mark.svg)',

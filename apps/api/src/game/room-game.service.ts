@@ -241,6 +241,84 @@ export class RoomGameService {
     }
 
     /**
+     * Mark a cell containing any drawn number (for reconnect scenarios)
+     * This allows players to mark numbers they missed while disconnected
+     */
+    markAnyDrawnNumber(
+        roomId: string,
+        socketId: string,
+        row: number,
+        col: number,
+    ): ServiceResult<{ hasWaitingUpdate: boolean }> {
+        const room = this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        if (room.phase !== RoomPhase.PLAYING || !room.game) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Game not active' },
+            };
+        }
+
+        const player = this.roomManager.findPlayerBySocketId(room, socketId);
+
+        if (!player) {
+            return {
+                success: false,
+                error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Player not found' },
+            };
+        }
+
+        // Validate the cell contains a number that has been drawn
+        const cellValue = player.ticket?.[row]?.[col];
+        if (cellValue === null || cellValue === undefined) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_MARK, message: 'Empty cell' },
+            };
+        }
+
+        if (!room.game.drawnNumbers.includes(cellValue)) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_MARK, message: 'Number not yet drawn' },
+            };
+        }
+
+        // Check if already marked
+        if (player.marked?.[row]?.[col]) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ALREADY_RESPONDED, message: 'Cell already marked' },
+            };
+        }
+
+        // Mark the cell
+        if (player.marked) {
+            player.marked[row][col] = true;
+        }
+
+        // If this is the current active number, mark as responded
+        if (cellValue === room.game.activeNumber) {
+            player.respondedTurnId = room.game.turnId;
+            room.game.turnResponses[player.id] = 'MARKED';
+        }
+
+        // Check for waiting state (4/5 in a row)
+        this.updateWaitingBoard(room);
+
+        this.roomManager.update(roomId, room);
+
+        return { success: true, data: { hasWaitingUpdate: true } };
+    }
+
+    /**
      * Player has no matching number
      */
     noNumber(

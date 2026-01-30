@@ -7,16 +7,16 @@ interface TicketGridProps {
     ticket: Ticket | undefined;
     marked: boolean[][] | undefined;
     currentNumber?: number;
+    drawnNumbers?: number[];
     onCellClick?: (row: number, col: number) => void;
-    readonly?: boolean;
 }
 
 export function TicketGrid({
     ticket,
     marked,
     currentNumber,
+    drawnNumbers = [],
     onCellClick,
-    readonly = false,
 }: TicketGridProps) {
     // Empty state
     if (!ticket) {
@@ -60,8 +60,9 @@ export function TicketGrid({
                                 value={value}
                                 marked={isMarked}
                                 isCurrentNumber={isCurrentNumber}
+                                isDrawn={value !== null && drawnNumbers.includes(value)}
                                 onClick={() => onCellClick?.(rowIndex, colIndex)}
-                                disabled={readonly || isMarked || value === null}
+                                disabled={isMarked || value === null}
                             />
                         );
                     })

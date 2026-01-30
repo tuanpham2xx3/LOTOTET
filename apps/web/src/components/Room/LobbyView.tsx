@@ -42,7 +42,6 @@ export function LobbyView({
                         <TicketGrid
                             ticket={myPlayer?.ticket}
                             marked={myPlayer?.marked}
-                            readonly={true}
                         />
                     </div>
                     <div className="mt-4 flex gap-2">

@@ -114,6 +114,10 @@ export class RoomService {
         return this.gameService.markCell(roomId, socketId, turnId, row, col);
     }
 
+    markAnyDrawnNumber(roomId: string, socketId: string, row: number, col: number) {
+        return this.gameService.markAnyDrawnNumber(roomId, socketId, row, col);
+    }
+
     noNumber(roomId: string, socketId: string, turnId: number) {
         return this.gameService.noNumber(roomId, socketId, turnId);
     }

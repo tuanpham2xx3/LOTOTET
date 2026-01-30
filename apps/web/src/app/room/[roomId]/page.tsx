@@ -139,9 +139,7 @@ export default function RoomPage() {
     };
 
     const handleMark = (row: number, col: number) => {
-        if (!currentTurn) return;
-        socket?.emit('turn:mark', {
-            turnId: currentTurn.turnId,
+        socket?.emit('turn:markAny', {
             row,
             col,
         });
