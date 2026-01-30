@@ -206,6 +206,10 @@ export default function RoomPage() {
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     {/* Left: Player count */}
                     <div className="flex items-center gap-4">
+                        <span className="font-mono text-indigo-400 text-sm">
+                            {roomState.roomId}
+                        </span>
+                        <div className="h-5 w-px bg-white/20" />
                         <div className="flex items-center gap-1.5">
                             <span className="text-lg">👤</span>
                             <span className="font-bold text-white">

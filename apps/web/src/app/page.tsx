@@ -122,31 +122,26 @@ export default function HomePage() {
       <div className="w-full max-w-md animate-fadeInUp">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gradient mb-2">
-            🎲 LOTOTET
-          </h1>
-          <p className="text-slate-400">Game Lô Tô Online</p>
+          <img
+            src="/logo.png"
+            alt="LOTOTET"
+            className="w-56 h-32 md:w-64 md:h-40 mx-auto"
+          />
         </div>
 
         {/* Card */}
-        <div className="card p-6 glass shadow-glow">
+        <div className="card-traditional p-6">
           {/* Mode Toggle */}
-          <div className="flex rounded-lg bg-slate-800/50 p-1 mb-6">
+          <div className={`toggle-traditional mb-6 ${mode === 'join' ? 'join' : ''}`}>
             <button
               onClick={() => setMode('create')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'create'
-                ? 'bg-indigo-500 text-white'
-                : 'text-slate-400 hover:text-white'
-                }`}
+              className={`toggle-traditional-btn ${mode === 'create' ? 'active' : ''}`}
             >
               Tạo phòng
             </button>
             <button
               onClick={() => setMode('join')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${mode === 'join'
-                ? 'bg-indigo-500 text-white'
-                : 'text-slate-400 hover:text-white'
-                }`}
+              className={`toggle-traditional-btn ${mode === 'join' ? 'active' : ''}`}
             >
               Vào phòng
             </button>
@@ -155,46 +150,46 @@ export default function HomePage() {
           {/* Form */}
           <div className="space-y-4">
             <div>
-              <label className="input-label">Tên của bạn</label>
+              <label className="input-label-traditional">Tên của bạn</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nhập tên..."
-                className="input"
+                className="input-traditional"
                 maxLength={20}
               />
             </div>
 
             {mode === 'join' && (
               <div>
-                <label className="input-label">Room ID</label>
+                <label className="input-label-traditional">Room ID</label>
                 <input
                   type="text"
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value.toUpperCase())}
                   placeholder="ABC123"
-                  className="input font-mono uppercase"
+                  className="input-traditional font-mono uppercase"
                   maxLength={6}
                 />
               </div>
             )}
 
             <div>
-              <label className="input-label">Số dư (VND)</label>
+              <label className="input-label-traditional">Số dư (VND)</label>
               <input
                 type="number"
                 value={balance}
                 onChange={(e) => setBalance(Number(e.target.value))}
                 placeholder="100000"
-                className="input"
+                className="input-traditional"
                 min={10000}
                 step={10000}
               />
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/20 text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-red-900/50 border border-red-500/50 text-red-300 text-sm">
                 {error}
               </div>
             )}
@@ -202,17 +197,17 @@ export default function HomePage() {
             <button
               onClick={mode === 'create' ? handleCreate : handleJoin}
               disabled={loading}
-              className="w-full btn btn-primary btn-lg disabled:opacity-50"
+              className="w-full btn-traditional-red py-4 text-lg"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Đang xử lý...
                 </span>
               ) : mode === 'create' ? (
-                '🏠 Tạo phòng mới'
+                'Tạo phòng mới'
               ) : (
-                '🚀 Vào phòng'
+                'Vào phòng'
               )}
             </button>
           </div>

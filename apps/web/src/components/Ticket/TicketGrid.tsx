@@ -43,9 +43,9 @@ export function TicketGrid({
     const currentPos = findCurrentNumberPosition();
 
     return (
-        <div className="inline-block p-2 md:p-3 lg:p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+        <div className="inline-block">
             <div
-                className="grid gap-0.5 sm:gap-1 md:gap-1 lg:gap-1.5"
+                className="grid gap-2"
                 style={{ gridTemplateColumns: 'repeat(9, minmax(0, 1fr))' }}
             >
                 {ticket.map((row, rowIndex) =>

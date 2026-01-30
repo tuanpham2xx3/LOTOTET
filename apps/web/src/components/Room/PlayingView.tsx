@@ -69,32 +69,7 @@ export function PlayingView({
 
     return (
         <div className="animate-fadeInUp">
-            {/* Game Info Banner - Mobile */}
-            <div className="md:hidden mb-4">
-                <div className="card p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="text-center">
-                            <div className="text-xs text-slate-500">Số dư</div>
-                            <div className="text-lg font-bold text-emerald-400">
-                                {formatNumber(myPlayer?.balance || 0)}đ
-                            </div>
-                        </div>
-                        <div className="h-8 w-px bg-slate-700"></div>
-                        <div className="text-center">
-                            <div className="text-xs text-slate-500">Cược</div>
-                            <div className="text-sm font-medium text-amber-400">
-                                {formatNumber(betAmount)}đ
-                            </div>
-                        </div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-xs text-slate-500">Tổng pot</div>
-                        <div className="text-lg font-bold text-gradient">
-                            {formatNumber(totalPot)}đ
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             {/* Mobile Layout */}
             <div className="md:hidden space-y-4">
@@ -173,30 +148,6 @@ export function PlayingView({
             <div className="hidden md:flex gap-6">
                 {/* Left: Ticket */}
                 <div className="flex-1">
-                    {/* Player Balance Info */}
-                    <div className="card p-4 mb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                            <div>
-                                <div className="text-xs text-slate-500 mb-1">💰 Số dư của bạn</div>
-                                <div className="text-2xl font-bold text-emerald-400">
-                                    {formatNumber(myPlayer?.balance || 0)}đ
-                                </div>
-                            </div>
-                            <div className="h-10 w-px bg-slate-700"></div>
-                            <div>
-                                <div className="text-xs text-slate-500 mb-1">🎰 Cược mỗi người</div>
-                                <div className="text-lg font-medium text-amber-400">
-                                    {formatNumber(betAmount)}đ
-                                </div>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-xs text-slate-500 mb-1">🏆 Tổng pot</div>
-                            <div className="text-2xl font-bold text-gradient">
-                                {formatNumber(totalPot)}đ
-                            </div>
-                        </div>
-                    </div>
 
                     <div className="card p-4">
                         <h3 className="text-sm font-medium text-slate-400 mb-3">🎟️ Vé của bạn</h3>

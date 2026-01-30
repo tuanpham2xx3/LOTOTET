@@ -197,6 +197,156 @@ html {
   .btn-xl {
     @apply px-8 py-4 text-xl font-bold;
   }
+
+  /* Traditional Vietnamese-style buttons - Red with gold border */
+  .btn-traditional-red {
+    position: relative;
+    background: linear-gradient(180deg, #c62828 0%, #8b0000 50%, #5c0000 100%);
+    border: 3px solid #d4a000;
+    border-radius: 8px;
+    color: #fff8e1;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(139, 0, 0, 0.5);
+    transition: all 0.2s ease;
+  }
+
+  .btn-traditional-red:hover {
+    background: linear-gradient(180deg, #d32f2f 0%, #a10000 50%, #6c0000 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+      0 6px 12px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(139, 0, 0, 0.5),
+      0 0 15px rgba(212, 160, 0, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-traditional-red:active {
+    transform: translateY(1px);
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-traditional-red:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Toggle container for traditional look */
+  .toggle-traditional {
+    position: relative;
+    display: flex;
+    background: linear-gradient(180deg, #8b0000 0%, #5c0000 100%);
+    border: 2px solid #d4a000;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Sliding indicator */
+  .toggle-traditional::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: linear-gradient(180deg, #c62828 0%, #8b0000 100%);
+    border: 2px solid #d4a000;
+    border-radius: 5px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+  }
+
+  .toggle-traditional.join::before {
+    transform: translateX(100%);
+  }
+
+  .toggle-traditional-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #d4a000;
+    background: transparent;
+    border: none;
+    transition: color 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+  }
+
+  .toggle-traditional-btn:hover:not(.active) {
+    color: #ffd700;
+  }
+
+  .toggle-traditional-btn.active {
+    color: #fff8e1;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Traditional input style */
+  .input-traditional {
+    width: 100%;
+    padding: 12px 16px;
+    background: linear-gradient(180deg, rgba(139, 0, 0, 0.3) 0%, rgba(92, 0, 0, 0.5) 100%);
+    border: 2px solid #d4a000;
+    border-radius: 8px;
+    color: #fff8e1;
+    font-size: 16px;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .input-traditional::placeholder {
+    color: rgba(255, 248, 225, 0.5);
+  }
+
+  .input-traditional:focus {
+    outline: none;
+    border-color: #ffd700;
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 0 10px rgba(212, 160, 0, 0.4);
+  }
+
+  .input-label-traditional {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #d4a000;
+    margin-bottom: 6px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Traditional card */
+  .card-traditional {
+    background: linear-gradient(180deg,
+        rgba(139, 0, 0, 0.85) 0%,
+        rgba(92, 0, 0, 0.9) 50%,
+        rgba(60, 0, 0, 0.95) 100%);
+    border: 4px solid #d4a000;
+    border-radius: 12px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 0 20px rgba(212, 160, 0, 0.2);
+  }
 }
 
 /* ========================

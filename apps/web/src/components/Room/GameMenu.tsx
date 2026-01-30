@@ -76,6 +76,24 @@ export function GameMenu({
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {/* Balance Info */}
+                    <div className="bg-slate-800/50 rounded-lg p-3">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <div className="text-xs text-slate-400 mb-1">💰 Số dư của bạn</div>
+                                <div className="text-amber-400 font-bold text-lg">
+                                    {myPlayer?.balance.toLocaleString() ?? 0}đ
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-slate-400 mb-1">🏆 Tổng pot</div>
+                                <div className="text-emerald-400 font-bold text-lg">
+                                    {((roomState.betAmount || 0) * roomState.players.length).toLocaleString()}đ
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Bet Amount - Host Only */}
                     {isHost && (
                         <div className="bg-slate-800/50 rounded-lg p-3">
