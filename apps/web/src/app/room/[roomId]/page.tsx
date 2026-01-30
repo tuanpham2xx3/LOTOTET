@@ -202,7 +202,7 @@ export default function RoomPage() {
     return (
         <main className="min-h-screen">
             {/* Header */}
-            <header className="sticky top-0 z-30 glass border-b border-white/10">
+            <header className="sticky top-0 z-30 border-b border-white/10" style={{ backgroundColor: 'rgba(74, 4, 4, 0.85)' }}>
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     {/* Left: Player count */}
                     <div className="flex items-center gap-4">

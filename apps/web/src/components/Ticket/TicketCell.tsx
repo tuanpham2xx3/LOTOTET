@@ -26,36 +26,41 @@ export function TicketCell({
             disabled={disabled || isEmpty}
             className={cn(
                 // Base styles
-                'flex items-center justify-center rounded-md transition-all duration-200',
+                'relative flex items-center justify-center transition-all duration-200 overflow-hidden',
                 // Responsive sizing - consistent spacing
                 'w-8 h-8 text-sm',
                 'md:w-9 md:h-9',
                 'lg:w-10 lg:h-10 lg:text-base',
                 // Font
-                'font-semibold',
+                'font-bold',
                 // States
-                isEmpty && 'bg-slate-800/50 cursor-default',
+                isEmpty && 'bg-slate-800/50 cursor-default rounded-lg',
                 !isEmpty && !marked && [
-                    'bg-[#FFF8E1] text-[#5D4037]', // Cream background with brown text
+                    'bg-[#FFF8E1] text-[#4A2C2A]', // Cream background with darker brown text
                     'hover:bg-[#FFE4B5]',
                     'cursor-pointer',
-                    'border border-[#D7CCC8]',
+                    'border-2 border-[#A1887F]', // Thicker, more visible border
+                    'shadow-sm', // Subtle shadow for depth
+                    'rounded-lg',
                 ],
-                marked && [
-                    'bg-[#FFD700] text-[#5D4037]', // Gold background with brown text
-                    'border-2 border-[#FFA000]',
-                    'shadow-[0_0_12px_rgba(255,215,0,0.6)]', // Gold glow shadow
-                ],
+                // Marked state - use SVG background
+                marked && 'text-[#5D4037]',
                 isCurrentNumber && !marked && [
                     'ring-2 ring-amber-400 ring-offset-1 ring-offset-slate-900',
                     'animate-pulse-number',
                     'bg-amber-500/20',
+                    'rounded-lg',
                 ],
                 // Disabled
-                disabled && 'opacity-50 cursor-not-allowed',
+                disabled && !marked && 'opacity-50 cursor-not-allowed',
             )}
+            style={marked ? {
+                backgroundImage: 'url(/num_mark.svg)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            } : undefined}
         >
-            {value}
+            <span className="relative z-10">{value}</span>
         </button>
     );
 }

@@ -68,56 +68,81 @@ export function PlayingView({
     };
 
     return (
-        <div className="animate-fadeInUp">
-
+        <div className="animate-fadeInUp relative">
+            {/* BINGO Banner - Only shows when canBingo is true */}
+            {canBingo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+                    <button
+                        onClick={() => {
+                            vibrate(200);
+                            onBingo();
+                        }}
+                        className="
+                            px-12 py-6 
+                            bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400
+                            text-4xl md:text-5xl font-black text-white
+                            rounded-2xl
+                            shadow-[0_0_60px_rgba(251,191,36,0.8)]
+                            animate-pulse
+                            hover:scale-110 active:scale-95
+                            transition-transform duration-200
+                            border-4 border-yellow-300
+                        "
+                    >
+                        🎉 HÔ BINGO! 🎉
+                    </button>
+                </div>
+            )}
 
             {/* Mobile Layout */}
             <div className="md:hidden space-y-4">
-                {/* Current Number - Top */}
-                <div className="card p-4 text-center">
+                {/* Current Number + Action Buttons + Drawn Numbers - All in one */}
+                <div className="card p-4">
+                    {/* Số hiện tại */}
                     <CurrentNumber
                         number={currentTurn?.number ?? null}
                         turnId={currentTurn?.turnId}
                     />
-                    {!hasResponded && currentTurn && (
-                        <p className="text-sm text-amber-400 animate-pulse mt-2">
-                            Kiểm tra vé của bạn!
-                        </p>
-                    )}
-                </div>
 
-                {/* Action Buttons */}
-                <div className="px-2">
-                    <ActionButtons
-                        onMark={() => {
-                            // Find and mark the current number automatically
-                            if (!currentTurn || !myPlayer?.ticket) return;
-                            for (let r = 0; r < 9; r++) {
-                                for (let c = 0; c < 9; c++) {
-                                    if (myPlayer.ticket[r][c] === currentTurn.number) {
-                                        onMark(r, c);
-                                        return;
-                                    }
-                                }
-                            }
-                        }}
-                        onNoNumber={onNoNumber}
-                        onBingo={onBingo}
-                        canMark={!hasResponded && !!currentTurn}
-                        canBingo={canBingo}
-                        hasResponded={hasResponded}
-                    />
+                    {/* Action Buttons - ngay dưới số */}
+                    <div className="mt-4">
+                        <ActionButtons
+                            onDraw={onDraw}
+                            onNoNumber={onNoNumber}
+                            isHost={isHost}
+                            hasResponded={hasResponded}
+                            currentNumber={currentTurn?.number}
+                        />
+                    </div>
+
+                    {/* Drawn Numbers */}
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                        <DrawnNumbers
+                            numbers={game?.drawnNumbers || []}
+                            currentNumber={currentTurn?.number}
+                        />
+                    </div>
                 </div>
 
                 {/* Ticket */}
-                <div className="card p-3 flex justify-center">
-                    <TicketGrid
-                        ticket={myPlayer?.ticket}
-                        marked={myPlayer?.marked}
-                        currentNumber={currentTurn?.number}
-                        onCellClick={handleCellClick}
-                        readonly={hasResponded}
-                    />
+                <div
+                    className="relative w-full max-w-md mx-auto"
+                    style={{
+                        backgroundImage: 'url(/frame.svg)',
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center',
+                    }}
+                >
+                    <div className="p-6 sm:p-8 flex justify-center">
+                        <TicketGrid
+                            ticket={myPlayer?.ticket}
+                            marked={myPlayer?.marked}
+                            currentNumber={currentTurn?.number}
+                            onCellClick={handleCellClick}
+                            readonly={hasResponded}
+                        />
+                    </div>
                 </div>
 
                 {/* Waiting Board - Collapsible */}
@@ -135,95 +160,68 @@ export function PlayingView({
                     </details>
                 )}
 
-                {/* Drawn Numbers */}
-                <div className="card p-3">
-                    <DrawnNumbers
-                        numbers={game?.drawnNumbers || []}
-                        currentNumber={currentTurn?.number}
-                    />
-                </div>
+
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:flex gap-6">
+            <div className="hidden md:flex gap-6 justify-center">
                 {/* Left: Ticket */}
-                <div className="flex-1">
-
-                    <div className="card p-4">
-                        <h3 className="text-sm font-medium text-slate-400 mb-3">🎟️ Vé của bạn</h3>
-                        <div className="flex justify-center">
-                            <TicketGrid
-                                ticket={myPlayer?.ticket}
-                                marked={myPlayer?.marked}
-                                currentNumber={currentTurn?.number}
-                                onCellClick={handleCellClick}
-                                readonly={hasResponded}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Drawn Numbers */}
-                    <div className="card p-4 mt-4">
-                        <DrawnNumbers
-                            numbers={game?.drawnNumbers || []}
+                <div
+                    className="relative w-full max-w-lg"
+                    style={{
+                        backgroundImage: 'url(/frame.svg)',
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center',
+                    }}
+                >
+                    <div className="p-8 sm:p-10 md:p-12 flex justify-center">
+                        <TicketGrid
+                            ticket={myPlayer?.ticket}
+                            marked={myPlayer?.marked}
                             currentNumber={currentTurn?.number}
+                            onCellClick={handleCellClick}
+                            readonly={hasResponded}
                         />
                     </div>
                 </div>
 
-                {/* Right: Sidebar */}
-                <aside className="w-72 lg:w-80 space-y-4">
-                    {/* Current Number */}
-                    <div className="card p-4">
+                {/* Right: Sidebar - same width as ticket, with frame */}
+                <aside
+                    className="w-full max-w-lg"
+                    style={{
+                        backgroundImage: 'url(/frame.svg)',
+                        backgroundSize: '100% 100%',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'center',
+                    }}
+                >
+                    {/* Current Number + Action Buttons + Drawn Numbers - All in one */}
+                    <div className="p-8 sm:p-10 md:p-12">
+                        {/* Số hiện tại */}
                         <CurrentNumber
                             number={currentTurn?.number ?? null}
                             turnId={currentTurn?.turnId}
                         />
 
-                        {/* Host: Draw button */}
-                        {isHost && (
-                            <button
-                                onClick={onDraw}
-                                className="w-full btn btn-primary mt-4"
-                            >
-                                🎱 Quay số
-                            </button>
-                        )}
+                        {/* Action Buttons - ngay dưới số */}
+                        <div className="mt-4">
+                            <ActionButtons
+                                onDraw={onDraw}
+                                onNoNumber={onNoNumber}
+                                isHost={isHost}
+                                hasResponded={hasResponded}
+                                currentNumber={currentTurn?.number}
+                            />
+                        </div>
 
-                        {/* Response status */}
-                        {currentTurn && (
-                            <div className="mt-3 text-center text-sm">
-                                {hasResponded ? (
-                                    <span className="text-emerald-400">✓ Đã phản hồi</span>
-                                ) : (
-                                    <span className="text-amber-400 animate-pulse">
-                                        Đợi bạn phản hồi...
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="card p-4">
-                        <ActionButtons
-                            onMark={() => {
-                                if (!currentTurn || !myPlayer?.ticket) return;
-                                for (let r = 0; r < 9; r++) {
-                                    for (let c = 0; c < 9; c++) {
-                                        if (myPlayer.ticket[r][c] === currentTurn.number) {
-                                            onMark(r, c);
-                                            return;
-                                        }
-                                    }
-                                }
-                            }}
-                            onNoNumber={onNoNumber}
-                            onBingo={onBingo}
-                            canMark={!hasResponded && !!currentTurn}
-                            canBingo={canBingo}
-                            hasResponded={hasResponded}
-                        />
+                        {/* Drawn Numbers */}
+                        <div className="mt-4 pt-4 border-t border-white/10">
+                            <DrawnNumbers
+                                numbers={game?.drawnNumbers || []}
+                                currentNumber={currentTurn?.number}
+                            />
+                        </div>
                     </div>
 
                     {/* Waiting Board */}

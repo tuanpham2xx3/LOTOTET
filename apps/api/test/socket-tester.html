@@ -416,8 +416,8 @@
             </div>
             <hr>
             <div class="btn-group">
-                <button class="btn-primary" onclick="gameStart()">🚀 Start Game</button>
-                <button class="btn-warn" onclick="turnDraw()">🎱 Draw Number</button>
+                <button class="btn-primary" onclick="gameStart()">Start Game</button>
+                <button class="btn-warn" onclick="turnDraw()">Draw Number</button>
                 <button class="btn-secondary" onclick="gameRestart()">🔄 Restart</button>
             </div>
         </div>
@@ -453,14 +453,14 @@
             <!-- BINGO Button -->
             <button class="btn-warn" onclick="bingoClaim()"
                 style="width: 100%; padding: 15px; font-size: 18px; font-weight: bold;">
-                🎉 HÔ BINGO!
+                HÔ BINGO!
             </button>
 
             <hr>
 
             <!-- Drawn Numbers -->
             <div>
-                <h3 style="font-size: 13px; color: var(--text-dim); margin-bottom: 8px;">🎱 Số đã quay (<span
+                <h3 style="font-size: 13px; color: var(--text-dim); margin-bottom: 8px;"> Số đã quay (<span
                         id="drawnCount">0</span>)</h3>
                 <div id="drawnNumbers"
                     style="display: flex; flex-wrap: wrap; gap: 4px; max-height: 80px; overflow-y: auto;">
@@ -728,7 +728,7 @@
 
             socket.on('game:ended', (data) => {
                 log('receive', 'game:ended', data);
-                alert(`🎉 Game kết thúc!\nNgười thắng: ${data.winner?.playerName || 'Unknown'}\nGiải thưởng: ${data.winner?.prize || 0}`);
+                alert(`Game kết thúc!\nNgười thắng: ${data.winner?.playerName || 'Unknown'}\nGiải thưởng: ${data.winner?.prize || 0}`);
             });
 
             socket.on('error', (data) => log('error', 'error', data));

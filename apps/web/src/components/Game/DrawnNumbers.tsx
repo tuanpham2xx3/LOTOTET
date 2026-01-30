@@ -19,7 +19,7 @@ export function DrawnNumbers({ numbers, currentNumber }: DrawnNumbersProps) {
     return (
         <div className="space-y-2">
             <h3 className="text-sm font-medium text-slate-400 flex items-center gap-2">
-                <span>🎱</span>
+                <span></span>
                 Đã quay ({numbers.length})
             </h3>
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">

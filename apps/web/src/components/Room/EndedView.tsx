@@ -48,7 +48,7 @@ export function EndedView({
 
             {/* Winner Card */}
             <div className="relative z-10 text-center">
-                <div className="text-6xl mb-4">🎉</div>
+                <div className="text-6xl mb-4"></div>
                 <h1 className="text-3xl md:text-4xl font-bold text-gradient mb-2">
                     BINGO!
                 </h1>

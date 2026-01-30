@@ -29,7 +29,7 @@ export function LobbyView({
             <div
                 className="relative w-full max-w-lg"
                 style={{
-                    backgroundImage: 'url(/frame_ticket.svg)',
+                    backgroundImage: 'url(/frame.svg)',
                     backgroundSize: '100% 100%',
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'center',
