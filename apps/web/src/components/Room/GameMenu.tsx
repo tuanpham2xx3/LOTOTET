@@ -39,11 +39,36 @@ export function GameMenu({
     const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
     const [balanceInput, setBalanceInput] = useState('');
 
+    // State for kick confirmation modal
+    const [kickingPlayer, setKickingPlayer] = useState<Player | null>(null);
+
     const handleBetChange = (value: string) => {
-        setBetInput(value);
-        const num = parseInt(value, 10);
+        // Only allow digits
+        const numericValue = value.replace(/[^0-9]/g, '');
+        // Limit to max 999999
+        const num = parseInt(numericValue, 10);
+        if (!isNaN(num) && num > 999999) {
+            setBetInput('999999');
+            onSetBet(999999);
+            return;
+        }
+        setBetInput(numericValue);
         if (!isNaN(num) && num >= 0) {
             onSetBet(num);
+        } else if (numericValue === '') {
+            onSetBet(0);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        // Allow: backspace, delete, tab, escape, enter, arrows
+        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+        if (allowedKeys.includes(e.key)) return;
+        // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return;
+        // Block non-digit keys
+        if (!/^\d$/.test(e.key)) {
+            e.preventDefault();
         }
     };
 
@@ -150,12 +175,14 @@ export function GameMenu({
                             </label>
                             <div className="flex items-center gap-2">
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={betInput}
                                     onChange={(e) => handleBetChange(e.target.value)}
+                                    onKeyDown={handleKeyDown}
                                     className="input-traditional flex-1"
                                     placeholder="0"
-                                    min="0"
                                 />
                                 <img src="/coin.svg" alt="" className="w-8 h-8" />
                             </div>
@@ -177,7 +204,7 @@ export function GameMenu({
                             {roomState.players.map((player) => (
                                 <div
                                     key={player.id}
-                                    className="flex items-center justify-between p-2 rounded-lg bg-slate-700/50"
+                                    className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10"
                                 >
                                     <div className="flex items-center gap-2">
                                         {player.isHost && (
@@ -214,11 +241,7 @@ export function GameMenu({
                                         )}
                                         {isHost && !player.isHost && (
                                             <button
-                                                onClick={() => {
-                                                    if (confirm(`Đuổi ${player.name} khỏi phòng?`)) {
-                                                        onKickPlayer(player.id);
-                                                    }
-                                                }}
+                                                onClick={() => setKickingPlayer(player)}
                                                 className="text-red-400 hover:text-red-300 text-sm"
                                                 title="Đuổi"
                                             >
@@ -243,14 +266,14 @@ export function GameMenu({
                                         key={req.requestId}
                                         className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10"
                                     >
-                                        <div>
+                                        <div className="flex items-center gap-2">
                                             <span className="font-medium text-sm">{req.name}</span>
-                                            <span className="text-xs text-slate-400 ml-2 flex items-center gap-0.5">
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-400 flex items-center gap-0.5">
                                                 {req.balance.toLocaleString()}
                                                 <img src="/coin.svg" alt="" className="w-3 h-3" />
                                             </span>
-                                        </div>
-                                        <div className="flex gap-2">
                                             <button
                                                 onClick={() => onApprove(req.requestId)}
                                                 className="text-emerald-400 hover:text-emerald-300 text-lg"
@@ -270,22 +293,6 @@ export function GameMenu({
                         </div>
                     )}
                 </div>
-
-                {/* Footer - Start Game Button */}
-                {isHost && (
-                    <div
-                        className="p-4"
-                        style={{ borderTop: '2px solid #d4a000' }}
-                    >
-                        <button
-                            onClick={onStartGame}
-                            disabled={!canStart}
-                            className="w-full btn-traditional-red py-3 text-lg"
-                        >
-                            Bắt đầu trò chơi
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Edit Balance Modal */}
@@ -330,7 +337,7 @@ export function GameMenu({
                                 {/* Player Info */}
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="text-xl">
-                                        {editingPlayer.isHost ? '👑' : '👤'}
+                                        {editingPlayer.isHost ? '👑' : <img src="/players.svg" alt="" className="w-6 h-6 inline" />}
                                     </span>
                                     <span className="text-amber-100 font-medium">
                                         {editingPlayer.name}
@@ -402,6 +409,88 @@ export function GameMenu({
                                     className="flex-1 py-3 rounded-lg font-bold transition-all btn-traditional-red"
                                 >
                                     Xác nhận
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Kick Confirmation Modal */}
+            {kickingPlayer && (
+                <>
+                    {/* Modal Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/70 z-[60] animate-fadeIn"
+                        onClick={() => setKickingPlayer(null)}
+                    />
+                    {/* Modal */}
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fadeInUp">
+                        <div
+                            className="w-full max-w-sm rounded-xl overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.98) 0%, rgba(60, 0, 0, 1) 100%)',
+                                border: '3px solid #d4a000',
+                                boxShadow: '0 0 40px rgba(212, 160, 0, 0.4)',
+                            }}
+                        >
+                            {/* Header */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3"
+                                style={{
+                                    background: 'rgba(74, 4, 4, 0.9)',
+                                    borderBottom: '2px solid #d4a000',
+                                }}
+                            >
+                                <h3 className="text-lg font-bold text-amber-400">
+                                    Xác nhận đuổi
+                                </h3>
+                                <button
+                                    onClick={() => setKickingPlayer(null)}
+                                    className="text-amber-200/60 hover:text-amber-200 text-xl"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5 text-center">
+                                <div className="mb-4"><img src="/players.svg" alt="" className="w-12 h-12 mx-auto" /></div>
+                                <p className="text-amber-100 mb-2">
+                                    Bạn có chắc muốn đuổi
+                                </p>
+                                <p className="text-xl font-bold text-amber-400">
+                                    {kickingPlayer.name}?
+                                </p>
+                            </div>
+
+                            {/* Footer */}
+                            <div
+                                className="flex gap-3 p-4"
+                                style={{
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    borderTop: '1px solid rgba(212, 160, 0, 0.3)',
+                                }}
+                            >
+                                <button
+                                    onClick={() => setKickingPlayer(null)}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'rgba(0, 0, 0, 0.3)',
+                                        border: '2px solid rgba(212, 160, 0, 0.5)',
+                                        color: '#d4a000',
+                                    }}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onKickPlayer(kickingPlayer.id);
+                                        setKickingPlayer(null);
+                                    }}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all btn-traditional-red"
+                                >
+                                    Đuổi
                                 </button>
                             </div>
                         </div>

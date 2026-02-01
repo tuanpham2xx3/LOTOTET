@@ -47,6 +47,7 @@ export interface ClientToServerEvents {
   'game:start': () => void;
   'turn:draw': () => void;
   'turn:mark': (payload: { turnId: number; row: number; col: number }) => void;
+  'turn:markAny': (payload: { row: number; col: number }) => void;
   'turn:noNumber': (payload: { turnId: number }) => void;
   'game:bingoClaim': () => void;
   'game:restart': () => void;

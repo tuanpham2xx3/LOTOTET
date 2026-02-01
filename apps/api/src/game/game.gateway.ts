@@ -476,6 +476,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const result = this.roomService.startGame(roomId, client.id);
         if (result.success) {
             this.broadcastRoomState(roomId);
+
+            // Auto-draw first number immediately
+            const drawResult = this.roomService.autoDrawNumber(roomId);
+            if (drawResult.success) {
+                // Emit turn:new to all players
+                this.server.to(roomId).emit('turn:new', {
+                    turnId: drawResult.data.turnId,
+                    number: drawResult.data.number,
+                });
+                this.broadcastRoomState(roomId);
+            }
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }

@@ -155,7 +155,7 @@ export function PlayingView({
                             border-4 border-yellow-300
                         "
                     >
-                        🎉 HÔ BINGO! 🎉
+                        HÔ BINGO!
                     </button>
                 </div>
             )}
@@ -168,23 +168,11 @@ export function PlayingView({
                         number={displayNumber}
                         turnId={displayTurnId}
                     />
-
-                    {/* Host: First draw button when no numbers drawn yet */}
-                    {isHost && drawnNumbers.length === 0 && (
-                        <div className="mt-4">
-                            <button
-                                onClick={onDraw}
-                                className="w-full py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl hover:from-indigo-400 hover:to-purple-400 transition-all shadow-lg"
-                            >
-                                🎲 Quay số đầu tiên
-                            </button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Ticket - điều chỉnh padding cho mobile */}
                 <div
-                    className="relative w-full max-w-sm mx-auto mt-2"
+                    className="relative w-full max-w-[420px] mx-auto mt-2"
                     style={{
                         backgroundImage: 'url(/frame.svg)',
                         backgroundSize: '100% 100%',
@@ -192,7 +180,7 @@ export function PlayingView({
                         backgroundPosition: 'center',
                     }}
                 >
-                    <div className="p-4 pt-6 pb-8 flex justify-center">
+                    <div className="p-8 pt-10 pb-12 flex justify-center">
                         <TicketGrid
                             ticket={myPlayer?.ticket}
                             marked={myPlayer?.marked}
@@ -245,18 +233,6 @@ export function PlayingView({
                             number={displayNumber}
                             turnId={displayTurnId}
                         />
-
-                        {/* Host: First draw button when no numbers drawn yet */}
-                        {isHost && drawnNumbers.length === 0 && (
-                            <div className="mt-4">
-                                <button
-                                    onClick={onDraw}
-                                    className="w-full py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-xl hover:from-indigo-400 hover:to-purple-400 transition-all shadow-lg"
-                                >
-                                    🎲 Quay số đầu tiên
-                                </button>
-                            </div>
-                        )}
                     </div>
 
                 </aside>

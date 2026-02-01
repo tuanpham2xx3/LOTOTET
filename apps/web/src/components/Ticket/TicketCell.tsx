@@ -29,8 +29,9 @@ export function TicketCell({
             className={cn(
                 // Base styles
                 'relative flex items-center justify-center transition-all duration-200 overflow-hidden',
-                // Responsive sizing - consistent spacing
-                'w-9 h-9 text-base',
+                // Responsive sizing - larger cells
+                'w-8 h-8 text-sm',
+                'sm:w-9 sm:h-9 sm:text-base',
                 'md:w-10 md:h-10',
                 'lg:w-11 lg:h-11 lg:text-lg',
                 // Font

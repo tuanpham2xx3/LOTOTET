@@ -45,7 +45,7 @@ export function TicketGrid({
     return (
         <div className="inline-block">
             <div
-                className="grid gap-2"
+                className="grid gap-1 sm:gap-1.5 md:gap-2"
                 style={{ gridTemplateColumns: 'repeat(9, minmax(0, 1fr))' }}
             >
                 {ticket.map((row, rowIndex) =>

@@ -11,7 +11,7 @@ import {
     useCurrentTurn,
     useConnected,
 } from '@/stores/gameStore';
-import { LobbyView, PlayingView, EndedView, GameMenu } from '@/components/Room';
+import { LobbyView, PlayingView, EndedView, GameMenu, PendingRequestsFloat } from '@/components/Room';
 import { ChatBox } from '@/components/Chat';
 import { formatNumber } from '@/lib/utils';
 
@@ -371,8 +371,30 @@ export default function RoomPage() {
     const currentTurn = useCurrentTurn();
     const [pendingPlayerIds, setPendingPlayerIds] = useState<string[]>([]);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [copyNotification, setCopyNotification] = useState<string | null>(null);
     const [showJoinForm, setShowJoinForm] = useState(false);
     const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
+
+    // Copy to clipboard helper
+    const copyToClipboard = async (text: string, label: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopyNotification(`Đã copy ${label}!`);
+            setTimeout(() => setCopyNotification(null), 2000);
+        } catch {
+            setCopyNotification('Không thể copy');
+            setTimeout(() => setCopyNotification(null), 2000);
+        }
+    };
+
+    // Get room link
+    const getRoomLink = () => {
+        if (typeof window !== 'undefined') {
+            return `${window.location.origin}/room/${roomState?.roomId || roomId.toUpperCase()}`;
+        }
+        return '';
+    };
 
     // Connect on mount
     useEffect(() => {
@@ -586,14 +608,83 @@ export default function RoomPage() {
 
     return (
         <main className="min-h-screen">
+            {/* Copy Notification Toast */}
+            {copyNotification && (
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fadeIn">
+                    <div className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium shadow-lg">
+                        {copyNotification}
+                    </div>
+                </div>
+            )}
+
+            {/* Share Modal */}
+            {showShareModal && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                        onClick={() => setShowShareModal(false)}
+                    />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div
+                            className="w-full max-w-sm rounded-xl p-6 animate-fadeIn"
+                            style={{
+                                background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.98) 0%, rgba(92, 0, 0, 0.99) 100%)',
+                                border: '3px solid #d4a000',
+                                boxShadow: '0 0 40px rgba(212, 160, 0, 0.4)',
+                            }}
+                        >
+                            <h3 className="text-xl font-bold text-amber-200 text-center mb-6">
+                                Chia sẻ phòng
+                            </h3>
+
+                            {/* Room ID */}
+                            <div className="mb-4">
+                                <label className="text-amber-200/70 text-sm mb-2 block">Mã phòng</label>
+                                <button
+                                    onClick={() => copyToClipboard(roomState?.roomId || '', 'Mã phòng')}
+                                    className="w-full p-3 rounded-lg bg-black/30 border border-amber-200/20 text-amber-200 font-mono text-base text-center hover:bg-black/50 hover:border-amber-200/40 transition-all group"
+                                >
+                                    <span className="group-hover:scale-105 inline-block transition-transform">
+                                        {roomState?.roomId}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Room Link */}
+                            <div className="mb-6">
+                                <label className="text-amber-200/70 text-sm mb-2 block">Link phòng</label>
+                                <button
+                                    onClick={() => copyToClipboard(getRoomLink(), 'Link phòng')}
+                                    className="w-full p-3 rounded-lg bg-black/30 border border-amber-200/20 text-amber-200 font-mono text-base text-center hover:bg-black/50 hover:border-amber-200/40 transition-all break-all"
+                                >
+                                    {getRoomLink()}
+                                </button>
+                            </div>
+
+                            {/* Close button */}
+                            <button
+                                onClick={() => setShowShareModal(false)}
+                                className="w-full py-3 rounded-lg bg-amber-200/10 text-amber-200 hover:bg-amber-200/20 transition-colors"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Header */}
             <header className="sticky top-0 z-30 border-b border-white/10" style={{ backgroundColor: 'rgba(74, 4, 4, 0.85)' }}>
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
                     {/* Left: Room info */}
                     <div className="flex items-center gap-4">
-                        <span className="font-mono text-amber-200 text-lg">
+                        <button
+                            onClick={() => setShowShareModal(true)}
+                            className="font-mono text-amber-200 text-lg hover:text-amber-100 transition-colors cursor-pointer"
+                            title="Ấn để chia sẻ phòng"
+                        >
                             {roomState.roomId}
-                        </span>
+                        </button>
                         <div className="h-5 w-px bg-white/20" />
                         <div className="flex items-center gap-1.5">
                             <span className="font-bold text-amber-200 text-lg">
@@ -678,6 +769,15 @@ export default function RoomPage() {
                     />
                 )}
             </div>
+
+            {/* Floating Pending Requests - Host Only */}
+            {isHost && roomState.pendingRequests.length > 0 && (
+                <PendingRequestsFloat
+                    requests={roomState.pendingRequests}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                />
+            )}
 
             {/* Chat */}
             {myPlayer && <ChatBox />}
