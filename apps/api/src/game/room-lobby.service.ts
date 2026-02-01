@@ -54,6 +54,14 @@ export class RoomLobbyService {
             createdAt: Date.now(),
         };
 
+        // Remove any existing pending request with the same name (e.g., from page refresh)
+        const existingIndex = room.pendingRequests.findIndex(
+            (r) => r.name.toLowerCase() === name.toLowerCase()
+        );
+        if (existingIndex !== -1) {
+            room.pendingRequests.splice(existingIndex, 1);
+        }
+
         room.pendingRequests.push(request);
         this.roomManager.update(roomId, room);
         this.roomManager.associateSocket(socketId, roomId);
