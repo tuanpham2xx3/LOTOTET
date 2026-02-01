@@ -48,6 +48,20 @@ export function PlayingView({
     const [showWaitingToast, setShowWaitingToast] = useState(false);
     const waitingToastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Track last played audio number to avoid replaying
+    const lastPlayedNumberRef = useRef<number | null>(null);
+
+    // Play audio when new number is drawn
+    useEffect(() => {
+        if (currentTurn?.number && currentTurn.number !== lastPlayedNumberRef.current) {
+            lastPlayedNumberRef.current = currentTurn.number;
+            const audio = new Audio(`/nums_audio/${currentTurn.number}.wav`);
+            audio.play().catch((err) => {
+                console.warn('[Audio] Failed to play number audio:', err);
+            });
+        }
+    }, [currentTurn?.number]);
+
     // Show toast when waiting board updates
     useEffect(() => {
         if (game?.waitingBoard && game.waitingBoard.length > 0) {
