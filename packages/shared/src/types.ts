@@ -123,4 +123,8 @@ export interface RoomState {
     winningRow: number;
     prize: number; // Số tiền thắng
   };
+  // Room lifecycle tracking
+  createdAt: number; // Timestamp khi room được tạo
+  lastActivityAt: number; // Timestamp của hoạt động cuối cùng
+  hostDisconnectedAt?: number; // Timestamp khi host disconnect (undefined nếu host online)
 }

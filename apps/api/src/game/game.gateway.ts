@@ -28,6 +28,7 @@ import {
     ErrorPayload,
 } from '@lototet/shared';
 import { WsRateLimiter, RATE_LIMITS } from './rate-limiter';
+import { RoomManager } from './room.manager';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
@@ -47,6 +48,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(
         private roomService: RoomService,
         private chatService: RoomChatService,
+        private roomManager: RoomManager,
     ) { }
 
     // ==================== Connection Lifecycle ====================
@@ -758,6 +760,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private broadcastRoomState(roomId: string) {
         const room = this.roomService.getRoom(roomId);
         if (room) {
+            // Update activity timestamp on every state change
+            this.roomManager.updateActivity(roomId);
             this.server.to(roomId).emit('room:state', room);
         }
     }

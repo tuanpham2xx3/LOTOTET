@@ -6,6 +6,7 @@ import { RoomLobbyService } from './room-lobby.service';
 import { RoomTicketService } from './room-ticket.service';
 import { RoomGameService } from './room-game.service';
 import { RoomChatService } from './room-chat.service';
+import { RoomCleanupService } from './room-cleanup.service';
 
 @Module({
     providers: [
@@ -16,6 +17,7 @@ import { RoomChatService } from './room-chat.service';
         RoomTicketService,
         RoomGameService,
         RoomChatService,
+        RoomCleanupService,
     ],
 })
 export class GameModule { }

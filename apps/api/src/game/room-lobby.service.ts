@@ -446,8 +446,13 @@ export class RoomLobbyService {
         const player = room.players.find((p) => p.socketId === socketId);
         if (player) {
             // DON'T remove player from room - they can reconnect
-            // Just log for debugging
             console.log(`[RoomLobbyService] Player ${player.id} (host: ${player.isHost}) disconnected, keeping in room for reconnection`);
+
+            // If host disconnected, track the timestamp for cleanup
+            if (player.isHost) {
+                this.roomManager.setHostDisconnected(roomId);
+                console.log(`[RoomLobbyService] Host disconnected - room ${roomId} will be deleted in 10 minutes if host doesn't reconnect`);
+            }
         }
 
         this.roomManager.removeSocket(socketId);
@@ -499,6 +504,17 @@ export class RoomLobbyService {
         // Associate new socket with room
         this.roomManager.associateSocket(newSocketId, roomId);
         this.roomManager.update(roomId, room);
+
+        // Update activity timestamp
+        this.roomManager.updateActivity(roomId);
+
+        // If host reconnected, clear the disconnect timestamp
+        if (player.isHost) {
+            this.roomManager.clearHostDisconnected(roomId);
+            console.log(`[RoomLobbyService] Host reconnected to room ${roomId}`);
+        }
+
+        console.log(`[RoomLobbyService] Player ${playerId} reconnected to room ${roomId}`);
 
         return { success: true, data: { player } };
     }

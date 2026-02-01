@@ -44,6 +44,7 @@ export class RoomManager {
      */
     create(roomId: string, hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): RoomState {
         const hostId = this.generatePlayerId();
+        const now = Date.now();
 
         const host: Player = {
             id: hostId,
@@ -64,6 +65,8 @@ export class RoomManager {
             pendingRequests: [],
             spectators: [],
             messages: [],
+            createdAt: now,
+            lastActivityAt: now,
         };
 
         this.rooms.set(roomId, room);
@@ -177,5 +180,42 @@ export class RoomManager {
         player.socketId = newSocketId;
 
         return true;
+    }
+
+    /**
+     * Get all rooms (for cleanup service)
+     */
+    getAllRooms(): Map<string, RoomState> {
+        return this.rooms;
+    }
+
+    /**
+     * Update room's last activity timestamp
+     */
+    updateActivity(roomId: string): void {
+        const room = this.rooms.get(roomId);
+        if (room) {
+            room.lastActivityAt = Date.now();
+        }
+    }
+
+    /**
+     * Set host disconnected timestamp
+     */
+    setHostDisconnected(roomId: string): void {
+        const room = this.rooms.get(roomId);
+        if (room) {
+            room.hostDisconnectedAt = Date.now();
+        }
+    }
+
+    /**
+     * Clear host disconnected timestamp (when host reconnects)
+     */
+    clearHostDisconnected(roomId: string): void {
+        const room = this.rooms.get(roomId);
+        if (room) {
+            room.hostDisconnectedAt = undefined;
+        }
     }
 }
