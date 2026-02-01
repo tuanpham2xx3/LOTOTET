@@ -57,18 +57,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         console.log(`[Gateway] Client connected: ${client.id}`);
     }
 
-    handleDisconnect(client: TypedSocket) {
+    async handleDisconnect(client: TypedSocket) {
         console.log(`[Gateway] Client disconnected: ${client.id}`);
-        const result = this.roomService.handleDisconnect(client.id);
+        const result = await this.roomService.handleDisconnect(client.id);
         if (result) {
-            this.broadcastRoomState(result.roomId);
+            await this.broadcastRoomState(result.roomId);
         }
     }
 
     // ==================== Room Management ====================
 
     @SubscribeMessage('room:create')
-    handleCreateRoom(
+    async handleCreateRoom(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -94,7 +94,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
         }
 
-        const { roomId, state } = this.roomService.createRoom(client.id, hostName, hostBalance);
+        const { roomId, state } = await this.roomService.createRoom(client.id, hostName, hostBalance);
 
         client.join(roomId);
         client.data.roomId = roomId;
@@ -107,7 +107,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('room:join')
-    handleJoinRoom(
+    async handleJoinRoom(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -131,7 +131,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         const { roomId, name, balance } = parsed.data;
-        const result = this.roomService.handleJoinRequest(roomId, client.id, name, balance);
+        const result = await this.roomService.handleJoinRequest(roomId, client.id, name, balance);
 
         if (result.success) {
             // Join the socket room to receive updates
@@ -139,7 +139,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             client.data.roomId = roomId;
 
             // Broadcast updated state to room (host sees pending request)
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
 
             return { success: true };
         }
@@ -148,7 +148,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('room:approveJoin')
-    handleApproveJoin(
+    async handleApproveJoin(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -164,7 +164,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.approveJoin(roomId, parsed.data.requestId, client.id);
+        const result = await this.roomService.approveJoin(roomId, parsed.data.requestId, client.id);
 
         if (result.success) {
             // Set playerId on the approved socket
@@ -175,14 +175,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 approvedSocket.data.playerId = result.data.player.id;
             }
 
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('room:rejectJoin')
-    handleRejectJoin(
+    async handleRejectJoin(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -198,7 +198,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.rejectJoin(roomId, parsed.data.requestId, client.id);
+        const result = await this.roomService.rejectJoin(roomId, parsed.data.requestId, client.id);
 
         if (result.success) {
             // Notify rejected socket
@@ -213,14 +213,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 rejectedSocket.leave(roomId);
             }
 
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('room:updateBalance')
-    handleUpdateBalance(
+    async handleUpdateBalance(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -236,7 +236,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.updateBalance(
+        const result = await this.roomService.updateBalance(
             roomId,
             parsed.data.playerId,
             parsed.data.balance,
@@ -244,14 +244,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         );
 
         if (result.success) {
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('room:kickPlayer')
-    handleKickPlayer(
+    async handleKickPlayer(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -269,7 +269,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.kickPlayer(roomId, playerId, client.id);
+        const result = await this.roomService.kickPlayer(roomId, playerId, client.id);
 
         if (result.success) {
             const { kickedSocketId, kickedName } = result.data;
@@ -290,7 +290,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
 
             // Broadcast updated state
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
 
             return { success: true, kickedName };
         } else {
@@ -299,7 +299,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('room:reconnect')
-    handleReconnect(
+    async handleReconnect(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -317,7 +317,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         const { roomId, playerId } = parsed.data;
-        const result = this.roomService.reconnectPlayer(roomId, playerId, client.id);
+        const result = await this.roomService.reconnectPlayer(roomId, playerId, client.id);
 
         if (result.success) {
             // Join socket room and set client data
@@ -326,7 +326,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             client.data.playerId = playerId;
 
             // Send current room state to reconnected player
-            const room = this.roomService.getRoom(roomId);
+            const room = await this.roomService.getRoom(roomId);
             if (room) {
                 client.emit('room:state', room);
             }
@@ -339,7 +339,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('room:setBetAmount')
-    handleSetBetAmount(
+    async handleSetBetAmount(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -355,14 +355,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.setBetAmount(
+        const result = await this.roomService.setBetAmount(
             roomId,
             parsed.data.amount,
             client.id,
         );
 
         if (result.success) {
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
@@ -371,7 +371,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ==================== Spectator Mode ====================
 
     @SubscribeMessage('room:spectate')
-    handleSpectate(
+    async handleSpectate(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -388,7 +388,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         const { roomId } = parsed.data;
-        const result = this.roomService.addSpectator(roomId, client.id);
+        const result = await this.roomService.addSpectator(roomId, client.id);
 
         if (result.success) {
             // Join socket room to receive updates
@@ -396,7 +396,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             client.data.roomId = roomId;
 
             // Send current room state to spectator
-            const room = this.roomService.getRoom(roomId);
+            const room = await this.roomService.getRoom(roomId);
             if (room) {
                 client.emit('room:state', room);
             }
@@ -408,7 +408,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('spectator:requestJoin')
-    handleSpectatorRequestJoin(
+    async handleSpectatorRequestJoin(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -430,11 +430,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         const { name, balance } = parsed.data;
-        const result = this.roomService.spectatorToJoinRequest(roomId, client.id, name, balance);
+        const result = await this.roomService.spectatorToJoinRequest(roomId, client.id, name, balance);
 
         if (result.success) {
             // Broadcast updated state (host sees pending request)
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
             return { success: true };
         }
 
@@ -444,7 +444,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ==================== Ticket Management ====================
 
     @SubscribeMessage('ticket:reroll')
-    handleTicketReroll(@ConnectedSocket() client: TypedSocket) {
+    async handleTicketReroll(@ConnectedSocket() client: TypedSocket) {
         console.log(`[Gateway] ticket:reroll from ${client.id}`);
 
         const roomId = client.data.roomId;
@@ -452,17 +452,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.rerollTicket(roomId, client.id);
+        const result = await this.roomService.rerollTicket(roomId, client.id);
 
         if (result.success) {
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('ticket:saveReady')
-    handleTicketSaveReady(@ConnectedSocket() client: TypedSocket) {
+    async handleTicketSaveReady(@ConnectedSocket() client: TypedSocket) {
         console.log(`[Gateway] ticket:saveReady from ${client.id}`);
 
         const roomId = client.data.roomId;
@@ -470,10 +470,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.saveTicketReady(roomId, client.id);
+        const result = await this.roomService.saveTicketReady(roomId, client.id);
 
         if (result.success) {
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
@@ -482,7 +482,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ==================== Game Flow ====================
 
     @SubscribeMessage('game:start')
-    handleGameStart(@ConnectedSocket() client: TypedSocket) {
+    async handleGameStart(@ConnectedSocket() client: TypedSocket) {
         console.log(`[Gateway] game:start from ${client.id}`);
 
         const roomId = client.data.roomId;
@@ -491,19 +491,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         // Start game directly from LOBBY (all players must be ready)
-        const result = this.roomService.startGame(roomId, client.id);
+        const result = await this.roomService.startGame(roomId, client.id);
         if (result.success) {
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
 
             // Auto-draw first number immediately
-            const drawResult = this.roomService.autoDrawNumber(roomId);
+            const drawResult = await this.roomService.autoDrawNumber(roomId);
             if (drawResult.success) {
                 // Emit turn:new to all players
                 this.server.to(roomId).emit('turn:new', {
                     turnId: drawResult.data.turnId,
                     number: drawResult.data.number,
                 });
-                this.broadcastRoomState(roomId);
+                await this.broadcastRoomState(roomId);
             }
         } else {
             return this.sendError(client, result.error.code, result.error.message);
@@ -511,7 +511,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('turn:draw')
-    handleTurnDraw(@ConnectedSocket() client: TypedSocket) {
+    async handleTurnDraw(@ConnectedSocket() client: TypedSocket) {
         console.log(`[Gateway] turn:draw from ${client.id}`);
 
         const roomId = client.data.roomId;
@@ -519,7 +519,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.drawNumber(roomId, client.id);
+        const result = await this.roomService.drawNumber(roomId, client.id);
 
         if (result.success) {
             // Emit turn:new to all players
@@ -528,14 +528,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 number: result.data.number,
             });
 
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('turn:mark')
-    handleTurnMark(
+    async handleTurnMark(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -551,7 +551,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.markCell(
+        const result = await this.roomService.markCell(
             roomId,
             client.id,
             parsed.data.turnId,
@@ -561,7 +561,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         if (result.success) {
             // Broadcast turn progress
-            const room = this.roomService.getRoom(roomId);
+            const room = await this.roomService.getRoom(roomId);
             if (room?.game) {
                 const pendingPlayerIds = this.roomService.getPendingPlayers(room);
                 this.server.to(roomId).emit('turn:progress', {
@@ -575,15 +575,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 });
             }
 
-            this.broadcastRoomState(roomId);
-            this.checkAndAutoDrawNextNumber(roomId);
+            await this.broadcastRoomState(roomId);
+            await this.checkAndAutoDrawNextNumber(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('turn:markAny')
-    handleTurnMarkAny(
+    async handleTurnMarkAny(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -601,7 +601,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.markAnyDrawnNumber(
+        const result = await this.roomService.markAnyDrawnNumber(
             roomId,
             client.id,
             row,
@@ -610,7 +610,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         if (result.success) {
             // Broadcast turn progress
-            const room = this.roomService.getRoom(roomId);
+            const room = await this.roomService.getRoom(roomId);
             if (room?.game) {
                 const pendingPlayerIds = this.roomService.getPendingPlayers(room);
                 this.server.to(roomId).emit('turn:progress', {
@@ -624,15 +624,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 });
             }
 
-            this.broadcastRoomState(roomId);
-            this.checkAndAutoDrawNextNumber(roomId);
+            await this.broadcastRoomState(roomId);
+            await this.checkAndAutoDrawNextNumber(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('turn:noNumber')
-    handleTurnNoNumber(
+    async handleTurnNoNumber(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -648,11 +648,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.noNumber(roomId, client.id, parsed.data.turnId);
+        const result = await this.roomService.noNumber(roomId, client.id, parsed.data.turnId);
 
         if (result.success) {
             // Broadcast turn progress
-            const room = this.roomService.getRoom(roomId);
+            const room = await this.roomService.getRoom(roomId);
             if (room?.game) {
                 const pendingPlayerIds = this.roomService.getPendingPlayers(room);
                 this.server.to(roomId).emit('turn:progress', {
@@ -661,15 +661,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 });
             }
 
-            this.broadcastRoomState(roomId);
-            this.checkAndAutoDrawNextNumber(roomId);
+            await this.broadcastRoomState(roomId);
+            await this.checkAndAutoDrawNextNumber(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('game:bingoClaim')
-    handleBingoClaim(@ConnectedSocket() client: TypedSocket) {
+    async handleBingoClaim(@ConnectedSocket() client: TypedSocket) {
         // Rate limit: 3 requests per 10s
         const ip = WsRateLimiter.getClientIp(client);
         if (!this.rateLimiter.isAllowed(ip, 'game:bingoClaim', 3, 10000)) {
@@ -683,25 +683,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.claimBingo(roomId, client.id);
+        const result = await this.roomService.claimBingo(roomId, client.id);
 
         if (result.success) {
             // Broadcast game ended
-            const room = this.roomService.getRoom(roomId);
+            const room = await this.roomService.getRoom(roomId);
             if (room?.winner) {
                 this.server.to(roomId).emit('game:ended', {
                     winner: room.winner,
                 });
             }
 
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
     }
 
     @SubscribeMessage('game:restart')
-    handleGameRestart(@ConnectedSocket() client: TypedSocket) {
+    async handleGameRestart(@ConnectedSocket() client: TypedSocket) {
         console.log(`[Gateway] game:restart from ${client.id}`);
 
         const roomId = client.data.roomId;
@@ -709,10 +709,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
         }
 
-        const result = this.roomService.restartGame(roomId, client.id);
+        const result = await this.roomService.restartGame(roomId, client.id);
 
         if (result.success) {
-            this.broadcastRoomState(roomId);
+            await this.broadcastRoomState(roomId);
         } else {
             return this.sendError(client, result.error.code, result.error.message);
         }
@@ -721,7 +721,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ==================== Chat ====================
 
     @SubscribeMessage('chat:send')
-    handleChatSend(
+    async handleChatSend(
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
@@ -745,7 +745,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         const { content, audioUrl } = payload as { content: string; audioUrl?: string };
 
-        const result = this.chatService.sendMessage(roomId, client.id, content, audioUrl);
+        const result = await this.chatService.sendMessage(roomId, client.id, content, audioUrl);
 
         if (result.success) {
             // Broadcast message to all in room
@@ -757,11 +757,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // ==================== Helpers ====================
 
-    private broadcastRoomState(roomId: string) {
-        const room = this.roomService.getRoom(roomId);
+    private async broadcastRoomState(roomId: string) {
+        const room = await this.roomService.getRoom(roomId);
         if (room) {
             // Update activity timestamp on every state change
-            this.roomManager.updateActivity(roomId);
+            await this.roomManager.updateActivity(roomId);
             this.server.to(roomId).emit('room:state', room);
         }
     }
@@ -773,14 +773,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     /**
      * Check if all players have responded and auto-draw the next number
      */
-    private checkAndAutoDrawNextNumber(roomId: string) {
-        const room = this.roomService.getRoom(roomId);
+    private async checkAndAutoDrawNextNumber(roomId: string) {
+        const room = await this.roomService.getRoom(roomId);
         if (!room?.game || room.game.turnId === 0) return;
 
         const pendingPlayerIds = this.roomService.getPendingPlayers(room);
         if (pendingPlayerIds.length === 0) {
             // All players responded, auto-draw next number
-            const drawResult = this.roomService.autoDrawNumber(roomId);
+            const drawResult = await this.roomService.autoDrawNumber(roomId);
             if (drawResult.success) {
                 // Emit turn:new to all players
                 this.server.to(roomId).emit('turn:new', {
@@ -788,7 +788,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     number: drawResult.data.number,
                 });
                 // Broadcast updated room state
-                this.broadcastRoomState(roomId);
+                await this.broadcastRoomState(roomId);
             }
         }
     }

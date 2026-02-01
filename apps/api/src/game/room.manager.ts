@@ -1,27 +1,51 @@
-import { Injectable } from '@nestjs/common';
-import { RoomState, RoomPhase, Player, PlayerStatus, GameState, generateTicket } from '@lototet/shared';
+import { Injectable, Logger } from '@nestjs/common';
+import { RoomState, RoomPhase, Player, PlayerStatus, generateTicket } from '@lototet/shared';
+import { RedisService } from '../redis/redis.service';
 
 /**
- * In-memory room storage manager
- * Stores all active game rooms in a Map
+ * Room Manager - Hybrid storage (Redis + In-Memory fallback)
+ * Uses Redis when available, falls back to in-memory for development
  */
 @Injectable()
 export class RoomManager {
-    private rooms = new Map<string, RoomState>();
-    private socketToRoom = new Map<string, string>(); // socketId -> roomId
+    private readonly logger = new Logger(RoomManager.name);
+
+    // In-memory fallback when Redis is not available
+    private memoryRooms = new Map<string, RoomState>();
+    private memorySocketToRoom = new Map<string, string>();
+
+    constructor(private readonly redis: RedisService) { }
+
+    /**
+     * Check if Redis is available
+     */
+    private useRedis(): boolean {
+        return this.redis.isConnected();
+    }
 
     /**
      * Generate a unique 6-character room code
      */
-    generateRoomId(): string {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars
+    async generateRoomId(): Promise<string> {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let roomId: string;
+        let attempts = 0;
+        const maxAttempts = 10;
+
         do {
             roomId = Array.from(
                 { length: 6 },
                 () => chars[Math.floor(Math.random() * chars.length)],
             ).join('');
-        } while (this.rooms.has(roomId));
+            attempts++;
+
+            const exists = this.useRedis()
+                ? await this.redis.roomExists(roomId)
+                : this.memoryRooms.has(roomId);
+
+            if (!exists) break;
+        } while (attempts < maxAttempts);
+
         return roomId;
     }
 
@@ -42,7 +66,7 @@ export class RoomManager {
     /**
      * Create a new room with the given host
      */
-    create(roomId: string, hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): RoomState {
+    async create(roomId: string, hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): Promise<RoomState> {
         const hostId = this.generatePlayerId();
         const now = Date.now();
 
@@ -54,7 +78,7 @@ export class RoomManager {
             isHost: true,
             status: PlayerStatus.APPROVED,
             ready: false,
-            ticket: generateTicket(), // Generate ticket immediately
+            ticket: generateTicket(),
         };
 
         const room: RoomState = {
@@ -69,70 +93,103 @@ export class RoomManager {
             lastActivityAt: now,
         };
 
-        this.rooms.set(roomId, room);
-        this.socketToRoom.set(hostSocketId, roomId);
+        if (this.useRedis()) {
+            await this.redis.setRoom(roomId, room);
+            await this.redis.setSocketRoom(hostSocketId, roomId);
+            this.logger.debug(`Room ${roomId} created in Redis`);
+        } else {
+            this.memoryRooms.set(roomId, room);
+            this.memorySocketToRoom.set(hostSocketId, roomId);
+            this.logger.debug(`Room ${roomId} created in memory (Redis not available)`);
+        }
+
         return room;
     }
 
     /**
      * Get room by ID
      */
-    get(roomId: string): RoomState | undefined {
-        return this.rooms.get(roomId);
+    async get(roomId: string): Promise<RoomState | undefined> {
+        if (this.useRedis()) {
+            const room = await this.redis.getRoom(roomId);
+            return room || undefined;
+        }
+        return this.memoryRooms.get(roomId);
     }
 
     /**
      * Get room by socket ID
      */
-    getBySocketId(socketId: string): RoomState | undefined {
-        const roomId = this.socketToRoom.get(socketId);
+    async getBySocketId(socketId: string): Promise<RoomState | undefined> {
+        const roomId = await this.getRoomIdBySocketId(socketId);
         if (!roomId) return undefined;
-        return this.rooms.get(roomId);
+        return this.get(roomId);
     }
 
     /**
      * Get roomId by socket ID
      */
-    getRoomIdBySocketId(socketId: string): string | undefined {
-        return this.socketToRoom.get(socketId);
+    async getRoomIdBySocketId(socketId: string): Promise<string | undefined> {
+        if (this.useRedis()) {
+            const roomId = await this.redis.getSocketRoom(socketId);
+            return roomId || undefined;
+        }
+        return this.memorySocketToRoom.get(socketId);
     }
 
     /**
      * Update room state
      */
-    update(roomId: string, state: RoomState): void {
-        this.rooms.set(roomId, state);
+    async update(roomId: string, state: RoomState): Promise<void> {
+        if (this.useRedis()) {
+            await this.redis.setRoom(roomId, state);
+        } else {
+            this.memoryRooms.set(roomId, state);
+        }
     }
 
     /**
      * Associate a socket with a room
      */
-    associateSocket(socketId: string, roomId: string): void {
-        this.socketToRoom.set(socketId, roomId);
+    async associateSocket(socketId: string, roomId: string): Promise<void> {
+        if (this.useRedis()) {
+            await this.redis.setSocketRoom(socketId, roomId);
+        } else {
+            this.memorySocketToRoom.set(socketId, roomId);
+        }
     }
 
     /**
      * Remove socket association
      */
-    removeSocket(socketId: string): void {
-        this.socketToRoom.delete(socketId);
+    async removeSocket(socketId: string): Promise<void> {
+        if (this.useRedis()) {
+            await this.redis.deleteSocket(socketId);
+        } else {
+            this.memorySocketToRoom.delete(socketId);
+        }
     }
 
     /**
      * Delete a room
      */
-    delete(roomId: string): void {
-        const room = this.rooms.get(roomId);
+    async delete(roomId: string): Promise<void> {
+        const room = await this.get(roomId);
         if (room) {
             // Clean up all socket associations
             for (const player of room.players) {
-                this.socketToRoom.delete(player.socketId);
+                await this.removeSocket(player.socketId);
             }
             for (const request of room.pendingRequests) {
-                this.socketToRoom.delete(request.socketId);
+                await this.removeSocket(request.socketId);
             }
         }
-        this.rooms.delete(roomId);
+
+        if (this.useRedis()) {
+            await this.redis.deleteRoom(roomId);
+        } else {
+            this.memoryRooms.delete(roomId);
+        }
     }
 
     /**
@@ -167,13 +224,13 @@ export class RoomManager {
     /**
      * Update player's socket ID (for reconnection)
      */
-    updatePlayerSocketId(room: RoomState, playerId: string, newSocketId: string, oldSocketId?: string): boolean {
+    async updatePlayerSocketId(room: RoomState, playerId: string, newSocketId: string, oldSocketId?: string): Promise<boolean> {
         const player = this.findPlayerById(room, playerId);
         if (!player) return false;
 
         // Remove old socket association if exists
         if (oldSocketId) {
-            this.socketToRoom.delete(oldSocketId);
+            await this.removeSocket(oldSocketId);
         }
 
         // Update player's socket ID
@@ -185,37 +242,52 @@ export class RoomManager {
     /**
      * Get all rooms (for cleanup service)
      */
-    getAllRooms(): Map<string, RoomState> {
-        return this.rooms;
+    async getAllRooms(): Promise<Map<string, RoomState>> {
+        if (this.useRedis()) {
+            return this.redis.getAllRooms();
+        }
+        return this.memoryRooms;
     }
 
     /**
      * Update room's last activity timestamp
      */
-    updateActivity(roomId: string): void {
-        const room = this.rooms.get(roomId);
-        if (room) {
-            room.lastActivityAt = Date.now();
+    async updateActivity(roomId: string): Promise<void> {
+        if (this.useRedis()) {
+            await this.redis.updateActivity(roomId);
+        } else {
+            const room = this.memoryRooms.get(roomId);
+            if (room) {
+                room.lastActivityAt = Date.now();
+            }
         }
     }
 
     /**
      * Set host disconnected timestamp
      */
-    setHostDisconnected(roomId: string): void {
-        const room = this.rooms.get(roomId);
-        if (room) {
-            room.hostDisconnectedAt = Date.now();
+    async setHostDisconnected(roomId: string): Promise<void> {
+        if (this.useRedis()) {
+            await this.redis.setHostDisconnected(roomId);
+        } else {
+            const room = this.memoryRooms.get(roomId);
+            if (room) {
+                room.hostDisconnectedAt = Date.now();
+            }
         }
     }
 
     /**
      * Clear host disconnected timestamp (when host reconnects)
      */
-    clearHostDisconnected(roomId: string): void {
-        const room = this.rooms.get(roomId);
-        if (room) {
-            room.hostDisconnectedAt = undefined;
+    async clearHostDisconnected(roomId: string): Promise<void> {
+        if (this.useRedis()) {
+            await this.redis.clearHostDisconnected(roomId);
+        } else {
+            const room = this.memoryRooms.get(roomId);
+            if (room) {
+                room.hostDisconnectedAt = undefined;
+            }
         }
     }
 }

@@ -18,8 +18,8 @@ export class RoomTicketService {
     /**
      * Reroll ticket for a player (only in LOBBY phase, before ready)
      */
-    rerollTicket(roomId: string, socketId: string): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    async rerollTicket(roomId: string, socketId: string): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -54,7 +54,7 @@ export class RoomTicketService {
         }
 
         player.ticket = generateTicket();
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
     }
@@ -62,8 +62,8 @@ export class RoomTicketService {
     /**
      * Save ticket and mark player as ready (only in LOBBY phase)
      */
-    saveTicketReady(roomId: string, socketId: string): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    async saveTicketReady(roomId: string, socketId: string): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -92,7 +92,7 @@ export class RoomTicketService {
         player.ready = true;
         // Initialize marked grid
         player.marked = Array.from({ length: 9 }, () => Array(9).fill(false));
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
     }

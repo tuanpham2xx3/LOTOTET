@@ -22,16 +22,16 @@ export class RoomService {
     /**
      * Create a new room
      */
-    createRoom(hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): { roomId: string; state: RoomState } {
-        const roomId = this.roomManager.generateRoomId();
-        const state = this.roomManager.create(roomId, hostSocketId, hostName, hostBalance);
+    async createRoom(hostSocketId: string, hostName: string = 'Host', hostBalance: number = 0): Promise<{ roomId: string; state: RoomState }> {
+        const roomId = await this.roomManager.generateRoomId();
+        const state = await this.roomManager.create(roomId, hostSocketId, hostName, hostBalance);
         return { roomId, state };
     }
 
     /**
      * Get room state
      */
-    getRoom(roomId: string): RoomState | undefined {
+    async getRoom(roomId: string): Promise<RoomState | undefined> {
         return this.roomManager.get(roomId);
     }
 

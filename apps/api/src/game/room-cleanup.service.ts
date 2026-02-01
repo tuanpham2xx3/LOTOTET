@@ -39,9 +39,9 @@ export class RoomCleanupService implements OnModuleInit, OnModuleDestroy {
     /**
      * Perform cleanup of inactive rooms
      */
-    private performCleanup(): void {
+    private async performCleanup(): Promise<void> {
         const now = Date.now();
-        const rooms = this.roomManager.getAllRooms();
+        const rooms = await this.roomManager.getAllRooms();
         const roomsToDelete: string[] = [];
 
         for (const [roomId, room] of rooms) {
@@ -72,7 +72,7 @@ export class RoomCleanupService implements OnModuleInit, OnModuleDestroy {
 
         // Delete rooms
         for (const roomId of roomsToDelete) {
-            this.roomManager.delete(roomId);
+            await this.roomManager.delete(roomId);
         }
 
         // Log summary if any rooms were deleted
@@ -84,13 +84,13 @@ export class RoomCleanupService implements OnModuleInit, OnModuleDestroy {
     /**
      * Get cleanup statistics (for debugging/monitoring)
      */
-    getStats(): {
+    async getStats(): Promise<{
         totalRooms: number;
         inactiveRooms: number;
         hostDisconnectedRooms: number;
-    } {
+    }> {
         const now = Date.now();
-        const rooms = this.roomManager.getAllRooms();
+        const rooms = await this.roomManager.getAllRooms();
         let inactiveRooms = 0;
         let hostDisconnectedRooms = 0;
 

@@ -21,8 +21,8 @@ export class RoomGameService {
      * Start the game (host only, all players must be ready)
      * Now starts directly from LOBBY phase
      */
-    startGame(roomId: string, hostSocketId: string): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    async startGame(roomId: string, hostSocketId: string): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -90,7 +90,7 @@ export class RoomGameService {
             turnResponses: {},
             waitingBoard: [],
         };
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
     }
@@ -98,8 +98,8 @@ export class RoomGameService {
     /**
      * Draw next number (host only)
      */
-    drawNumber(roomId: string, hostSocketId: string): ServiceResult<{ number: number; turnId: number }> {
-        const room = this.roomManager.get(roomId);
+    async drawNumber(roomId: string, hostSocketId: string): Promise<ServiceResult<{ number: number; turnId: number }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -164,7 +164,7 @@ export class RoomGameService {
             player.respondedTurnId = undefined;
         }
 
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { number, turnId: room.game.turnId } };
     }
@@ -173,8 +173,8 @@ export class RoomGameService {
      * Auto-draw next number (called by server when all players respond)
      * Similar to drawNumber but doesn't require host authentication
      */
-    autoDrawNumber(roomId: string): ServiceResult<{ number: number; turnId: number }> {
-        const room = this.roomManager.get(roomId);
+    async autoDrawNumber(roomId: string): Promise<ServiceResult<{ number: number; turnId: number }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -213,7 +213,7 @@ export class RoomGameService {
             player.respondedTurnId = undefined;
         }
 
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { number, turnId: room.game.turnId } };
     }
@@ -221,14 +221,14 @@ export class RoomGameService {
     /**
      * Mark a cell on player's ticket
      */
-    markCell(
+    async markCell(
         roomId: string,
         socketId: string,
         turnId: number,
         row: number,
         col: number,
-    ): ServiceResult<{ hasWaitingUpdate: boolean }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ hasWaitingUpdate: boolean }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -285,7 +285,7 @@ export class RoomGameService {
         // Check for waiting state (4/5 in a row)
         this.updateWaitingBoard(room);
 
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { hasWaitingUpdate: true } };
     }
@@ -294,13 +294,13 @@ export class RoomGameService {
      * Mark a cell containing any drawn number (for reconnect scenarios)
      * This allows players to mark numbers they missed while disconnected
      */
-    markAnyDrawnNumber(
+    async markAnyDrawnNumber(
         roomId: string,
         socketId: string,
         row: number,
         col: number,
-    ): ServiceResult<{ hasWaitingUpdate: boolean }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ hasWaitingUpdate: boolean }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -363,7 +363,7 @@ export class RoomGameService {
         // Check for waiting state (4/5 in a row)
         this.updateWaitingBoard(room);
 
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { hasWaitingUpdate: true } };
     }
@@ -371,12 +371,12 @@ export class RoomGameService {
     /**
      * Player has no matching number
      */
-    noNumber(
+    async noNumber(
         roomId: string,
         socketId: string,
         turnId: number,
-    ): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -434,7 +434,7 @@ export class RoomGameService {
 
         player.respondedTurnId = turnId;
         room.game.turnResponses[player.id] = 'NO_NUMBER';
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
     }
@@ -442,8 +442,8 @@ export class RoomGameService {
     /**
      * Claim BINGO
      */
-    claimBingo(roomId: string, socketId: string): ServiceResult<{ winningRow: number }> {
-        const room = this.roomManager.get(roomId);
+    async claimBingo(roomId: string, socketId: string): Promise<ServiceResult<{ winningRow: number }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -493,7 +493,7 @@ export class RoomGameService {
             winningRow,
             prize,
         };
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { winningRow } };
     }
@@ -501,8 +501,8 @@ export class RoomGameService {
     /**
      * Restart game (host only)
      */
-    restartGame(roomId: string, hostSocketId: string): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    async restartGame(roomId: string, hostSocketId: string): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -530,7 +530,7 @@ export class RoomGameService {
             player.respondedTurnId = undefined;
         }
 
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
     }

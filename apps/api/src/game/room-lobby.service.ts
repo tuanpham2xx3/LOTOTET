@@ -23,13 +23,13 @@ export class RoomLobbyService {
     /**
      * Handle join request (creates pending request)
      */
-    handleJoinRequest(
+    async handleJoinRequest(
         roomId: string,
         socketId: string,
         name: string,
         balance: number,
-    ): ServiceResult<{ requestId: string }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ requestId: string }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -63,8 +63,8 @@ export class RoomLobbyService {
         }
 
         room.pendingRequests.push(request);
-        this.roomManager.update(roomId, room);
-        this.roomManager.associateSocket(socketId, roomId);
+        await this.roomManager.update(roomId, room);
+        await this.roomManager.associateSocket(socketId, roomId);
 
         return { success: true, data: { requestId } };
     }
@@ -72,12 +72,12 @@ export class RoomLobbyService {
     /**
      * Approve a join request (host only)
      */
-    approveJoin(
+    async approveJoin(
         roomId: string,
         requestId: string,
         hostSocketId: string,
-    ): ServiceResult<{ player: Player; playerSocketId: string }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ player: Player; playerSocketId: string }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -126,7 +126,7 @@ export class RoomLobbyService {
 
         room.players.push(player);
         room.pendingRequests.splice(requestIndex, 1);
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { player, playerSocketId: request.socketId } };
     }
@@ -134,12 +134,12 @@ export class RoomLobbyService {
     /**
      * Reject a join request (host only)
      */
-    rejectJoin(
+    async rejectJoin(
         roomId: string,
         requestId: string,
         hostSocketId: string,
-    ): ServiceResult<{ rejectedSocketId: string }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ rejectedSocketId: string }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -168,8 +168,8 @@ export class RoomLobbyService {
 
         const request = room.pendingRequests[requestIndex];
         room.pendingRequests.splice(requestIndex, 1);
-        this.roomManager.update(roomId, room);
-        this.roomManager.removeSocket(request.socketId);
+        await this.roomManager.update(roomId, room);
+        await this.roomManager.removeSocket(request.socketId);
 
         return { success: true, data: { rejectedSocketId: request.socketId } };
     }
@@ -177,13 +177,13 @@ export class RoomLobbyService {
     /**
      * Update player balance (host only)
      */
-    updateBalance(
+    async updateBalance(
         roomId: string,
         playerId: string,
         balance: number,
         hostSocketId: string,
-    ): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -209,7 +209,7 @@ export class RoomLobbyService {
         }
 
         player.balance = balance;
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: undefined };
     }
@@ -217,12 +217,12 @@ export class RoomLobbyService {
     /**
      * Set bet amount for the room (host only)
      */
-    setBetAmount(
+    async setBetAmount(
         roomId: string,
         amount: number,
         hostSocketId: string,
-    ): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -247,7 +247,7 @@ export class RoomLobbyService {
 
         console.log(`[Lobby] Setting betAmount: ${room.betAmount} -> ${amount}`);
         room.betAmount = amount;
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
         console.log(`[Lobby] betAmount set successfully: ${room.betAmount}`);
 
         return { success: true, data: undefined };
@@ -256,12 +256,12 @@ export class RoomLobbyService {
     /**
      * Kick a player from the room (host only, LOBBY phase only)
      */
-    kickPlayer(
+    async kickPlayer(
         roomId: string,
         playerId: string,
         hostSocketId: string,
-    ): ServiceResult<{ kickedSocketId: string; kickedName: string }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ kickedSocketId: string; kickedName: string }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -308,8 +308,8 @@ export class RoomLobbyService {
 
         // Remove player from room
         room.players.splice(playerIndex, 1);
-        this.roomManager.removeSocket(kickedSocketId);
-        this.roomManager.update(roomId, room);
+        await this.roomManager.removeSocket(kickedSocketId);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { kickedSocketId, kickedName } };
     }
@@ -319,8 +319,8 @@ export class RoomLobbyService {
     /**
      * Add a spectator to the room
      */
-    addSpectator(roomId: string, socketId: string): ServiceResult<void> {
-        const room = this.roomManager.get(roomId);
+    async addSpectator(roomId: string, socketId: string): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -351,8 +351,8 @@ export class RoomLobbyService {
         };
 
         room.spectators.push(spectator);
-        this.roomManager.update(roomId, room);
-        this.roomManager.associateSocket(socketId, roomId);
+        await this.roomManager.update(roomId, room);
+        await this.roomManager.associateSocket(socketId, roomId);
 
         return { success: true, data: undefined };
     }
@@ -360,25 +360,25 @@ export class RoomLobbyService {
     /**
      * Remove a spectator from the room
      */
-    removeSpectator(roomId: string, socketId: string): void {
-        const room = this.roomManager.get(roomId);
+    async removeSpectator(roomId: string, socketId: string): Promise<void> {
+        const room = await this.roomManager.get(roomId);
         if (!room) return;
 
         room.spectators = room.spectators.filter((s) => s.socketId !== socketId);
-        this.roomManager.update(roomId, room);
-        this.roomManager.removeSocket(socketId);
+        await this.roomManager.update(roomId, room);
+        await this.roomManager.removeSocket(socketId);
     }
 
     /**
      * Convert spectator to join request (spectator wants to play)
      */
-    spectatorToJoinRequest(
+    async spectatorToJoinRequest(
         roomId: string,
         socketId: string,
         name: string,
         balance: number,
-    ): ServiceResult<{ requestId: string }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ requestId: string }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -418,7 +418,7 @@ export class RoomLobbyService {
         };
 
         room.pendingRequests.push(request);
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { requestId } };
     }
@@ -429,11 +429,11 @@ export class RoomLobbyService {
      * Players (including host) can reconnect with their playerId.
      * Only spectators and pending requests are removed.
      */
-    handleDisconnect(socketId: string): { roomId: string; room: RoomState } | undefined {
-        const roomId = this.roomManager.getRoomIdBySocketId(socketId);
+    async handleDisconnect(socketId: string): Promise<{ roomId: string; room: RoomState } | undefined> {
+        const roomId = await this.roomManager.getRoomIdBySocketId(socketId);
         if (!roomId) return undefined;
 
-        const room = this.roomManager.get(roomId);
+        const room = await this.roomManager.get(roomId);
         if (!room) return undefined;
 
         // Remove from pending requests (they need to re-request)
@@ -450,13 +450,13 @@ export class RoomLobbyService {
 
             // If host disconnected, track the timestamp for cleanup
             if (player.isHost) {
-                this.roomManager.setHostDisconnected(roomId);
+                await this.roomManager.setHostDisconnected(roomId);
                 console.log(`[RoomLobbyService] Host disconnected - room ${roomId} will be deleted in 10 minutes if host doesn't reconnect`);
             }
         }
 
-        this.roomManager.removeSocket(socketId);
-        this.roomManager.update(roomId, room);
+        await this.roomManager.removeSocket(socketId);
+        await this.roomManager.update(roomId, room);
 
         return { roomId, room };
     }
@@ -465,12 +465,12 @@ export class RoomLobbyService {
      * Reconnect a player who has refreshed the page
      * Updates their socket ID and re-associates them with the room
      */
-    reconnectPlayer(
+    async reconnectPlayer(
         roomId: string,
         playerId: string,
         newSocketId: string,
-    ): ServiceResult<{ player: Player }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ServiceResult<{ player: Player }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -492,7 +492,7 @@ export class RoomLobbyService {
         const oldSocketId = player.socketId;
 
         // Update player's socket ID
-        const updated = this.roomManager.updatePlayerSocketId(room, playerId, newSocketId, oldSocketId);
+        const updated = await this.roomManager.updatePlayerSocketId(room, playerId, newSocketId, oldSocketId);
 
         if (!updated) {
             return {
@@ -502,15 +502,15 @@ export class RoomLobbyService {
         }
 
         // Associate new socket with room
-        this.roomManager.associateSocket(newSocketId, roomId);
-        this.roomManager.update(roomId, room);
+        await this.roomManager.associateSocket(newSocketId, roomId);
+        await this.roomManager.update(roomId, room);
 
         // Update activity timestamp
-        this.roomManager.updateActivity(roomId);
+        await this.roomManager.updateActivity(roomId);
 
         // If host reconnected, clear the disconnect timestamp
         if (player.isHost) {
-            this.roomManager.clearHostDisconnected(roomId);
+            await this.roomManager.clearHostDisconnected(roomId);
             console.log(`[RoomLobbyService] Host reconnected to room ${roomId}`);
         }
 

@@ -13,13 +13,13 @@ export class RoomChatService {
     /**
      * Send a chat message to the room
      */
-    sendMessage(
+    async sendMessage(
         roomId: string,
         socketId: string,
         content: string,
         audioUrl?: string,
-    ): ChatResult<{ message: ChatMessage }> {
-        const room = this.roomManager.get(roomId);
+    ): Promise<ChatResult<{ message: ChatMessage }>> {
+        const room = await this.roomManager.get(roomId);
 
         if (!room) {
             return {
@@ -56,7 +56,7 @@ export class RoomChatService {
             room.messages = room.messages.slice(-100);
         }
 
-        this.roomManager.update(roomId, room);
+        await this.roomManager.update(roomId, room);
 
         return { success: true, data: { message } };
     }
