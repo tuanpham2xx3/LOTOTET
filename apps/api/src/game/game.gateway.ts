@@ -27,6 +27,7 @@ import {
     ErrorCode,
     ErrorPayload,
 } from '@lototet/shared';
+import { WsRateLimiter, RATE_LIMITS } from './rate-limiter';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
@@ -40,6 +41,8 @@ type TypedServer = Server<ClientToServerEvents, ServerToClientEvents, object, So
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server!: TypedServer;
+
+    private rateLimiter = new WsRateLimiter();
 
     constructor(
         private roomService: RoomService,
@@ -67,6 +70,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
+        // Rate limit: 10 requests per 60s
+        const ip = WsRateLimiter.getClientIp(client);
+        if (!this.rateLimiter.isAllowed(ip, 'room:create', 10, 60000)) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang tạo phòng quá nhanh. Vui lòng đợi.');
+        }
+
         console.log(`[Gateway] room:create from ${client.id}`, payload);
 
         // Parse payload (optional name and balance)
@@ -100,6 +109,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
+        // Rate limit: 10 requests per 60s
+        const ip = WsRateLimiter.getClientIp(client);
+        if (!this.rateLimiter.isAllowed(ip, 'room:join', 10, 60000)) {
+            return { success: false, error: { code: ErrorCode.VALIDATION_ERROR, message: 'Bạn đang gửi request quá nhanh. Vui lòng đợi.' } };
+        }
+
         console.log(`[Gateway] room:join from ${client.id}`, payload);
 
         // Validate payload
@@ -286,6 +301,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
+        // No rate limit for reconnect
         console.log(`[Gateway] room:reconnect from ${client.id}`, payload);
 
         const parsed = ReconnectSchema.safeParse(payload);
@@ -652,6 +668,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('game:bingoClaim')
     handleBingoClaim(@ConnectedSocket() client: TypedSocket) {
+        // Rate limit: 3 requests per 10s
+        const ip = WsRateLimiter.getClientIp(client);
+        if (!this.rateLimiter.isAllowed(ip, 'game:bingoClaim', 3, 10000)) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang gửi request quá nhanh.');
+        }
+
         console.log(`[Gateway] game:bingoClaim from ${client.id}`);
 
         const roomId = client.data.roomId;
@@ -701,6 +723,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
+        // Rate limit: 10 messages per 10s
+        const ip = WsRateLimiter.getClientIp(client);
+        if (!this.rateLimiter.isAllowed(ip, 'chat:send', 10, 10000)) {
+            return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang gửi tin nhắn quá nhanh.');
+        }
+
         console.log(`[Gateway] chat:send from ${client.id}`, payload);
 
         const roomId = client.data.roomId;
