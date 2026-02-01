@@ -176,7 +176,10 @@ export default function HomePage() {
             )}
 
             <div>
-              <label className="input-label-traditional">Số dư (🧧)</label>
+              <label className="input-label-traditional flex items-center gap-1">
+                Số dư
+                <img src="/coin.svg" alt="" className="w-4 h-4" />
+              </label>
               <input
                 type="number"
                 value={balance}
@@ -201,7 +204,12 @@ export default function HomePage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <img
+                    src="/menu_btn.svg"
+                    alt="Loading"
+                    className="w-6 h-6 animate-spin"
+                    style={{ animationDuration: '1s' }}
+                  />
                   Đang xử lý...
                 </span>
               ) : mode === 'create' ? (

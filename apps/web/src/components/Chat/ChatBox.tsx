@@ -4,9 +4,15 @@ import { useState, useRef, useEffect } from 'react';
 import { useChatMessages, useSocket, useMyPlayerId } from '@/stores/gameStore';
 import { ChatMessageItem } from './ChatMessage';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import type { ChatMessage } from '@lototet/shared';
 import './Chat.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010';
+
+// Floating message with fade effect
+interface FloatingMessage extends ChatMessage {
+    fadeOut: boolean;
+}
 
 export function ChatBox() {
     const socket = useSocket();
@@ -15,8 +21,10 @@ export function ChatBox() {
     const [input, setInput] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [floatingMessages, setFloatingMessages] = useState<FloatingMessage[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { isRecording, startRecording, stopRecording } = useAudioRecorder();
+    const lastMessageCountRef = useRef(0);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -24,6 +32,36 @@ export function ChatBox() {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, isOpen]);
+
+    // Handle new messages for floating display
+    useEffect(() => {
+        if (messages.length > lastMessageCountRef.current) {
+            // Get new messages
+            const newMessages = messages.slice(lastMessageCountRef.current);
+
+            newMessages.forEach((msg) => {
+                // Add new message to floating
+                const floatingMsg: FloatingMessage = { ...msg, fadeOut: false };
+                setFloatingMessages(prev => {
+                    const updated = [...prev, floatingMsg].slice(-2); // Keep only last 2
+                    return updated;
+                });
+
+                // Start fade out after 2 seconds
+                setTimeout(() => {
+                    setFloatingMessages(prev =>
+                        prev.map(m => m.id === msg.id ? { ...m, fadeOut: true } : m)
+                    );
+                }, 2000);
+
+                // Remove after fade animation (0.5s)
+                setTimeout(() => {
+                    setFloatingMessages(prev => prev.filter(m => m.id !== msg.id));
+                }, 2500);
+            });
+        }
+        lastMessageCountRef.current = messages.length;
+    }, [messages]);
 
     const handleSend = () => {
         if (!socket || !input.trim()) return;
@@ -91,6 +129,21 @@ export function ChatBox() {
 
     return (
         <div className={`chat-container ${isOpen ? 'open' : ''}`}>
+            {/* Floating messages - show when chat is closed */}
+            {!isOpen && floatingMessages.length > 0 && (
+                <div className="chat-floating-messages">
+                    {floatingMessages.map((msg) => (
+                        <div
+                            key={msg.id}
+                            className={`chat-floating-msg ${msg.fadeOut ? 'fade-out' : ''}`}
+                        >
+                            <span className="chat-floating-name">{msg.playerName}:</span>
+                            <span className="chat-floating-content">{msg.content}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             <button
                 className="chat-toggle"
                 onClick={() => setIsOpen(!isOpen)}

@@ -48,19 +48,21 @@ export function LobbyView({
                         <button
                             onClick={onReroll}
                             disabled={myPlayer?.ready}
-                            className="btn btn-secondary flex-1"
+                            className="flex-1 py-3 px-4 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{
+                                background: 'rgba(0, 0, 0, 0.3)',
+                                border: '2px solid #d4a000',
+                                color: '#d4a000',
+                            }}
                         >
                             Đổi vé
                         </button>
                         <button
                             onClick={onReady}
                             disabled={myPlayer?.ready}
-                            className={cn(
-                                'btn flex-1',
-                                myPlayer?.ready ? 'btn-success' : 'btn-primary',
-                            )}
+                            className="flex-1 py-3 px-4 rounded-lg font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed btn-traditional-red"
                         >
-                            {myPlayer?.ready ? '✅ Đã sẵn sàng' : 'Sẵn sàng'}
+                            {myPlayer?.ready ? 'Đã sẵn sàng' : 'Sẵn sàng'}
                         </button>
                     </div>
 

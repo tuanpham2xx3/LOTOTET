@@ -30,9 +30,9 @@ export function TicketCell({
                 // Base styles
                 'relative flex items-center justify-center transition-all duration-200 overflow-hidden',
                 // Responsive sizing - consistent spacing
-                'w-8 h-8 text-sm',
-                'md:w-9 md:h-9',
-                'lg:w-10 lg:h-10 lg:text-base',
+                'w-9 h-9 text-base',
+                'md:w-10 md:h-10',
+                'lg:w-11 lg:h-11 lg:text-lg',
                 // Font
                 'font-bold',
                 // States

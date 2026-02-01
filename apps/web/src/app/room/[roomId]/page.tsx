@@ -178,9 +178,23 @@ export default function RoomPage() {
     if (!connected) {
         return (
             <main className="min-h-screen flex items-center justify-center">
-                <div className="text-center animate-fadeIn">
-                    <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-slate-400">Đang kết nối...</p>
+                {/* Backdrop overlay */}
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+                <div
+                    className="relative z-50 p-8 rounded-xl text-center animate-fadeIn"
+                    style={{
+                        background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.95) 0%, rgba(92, 0, 0, 0.98) 100%)',
+                        border: '3px solid #d4a000',
+                        boxShadow: '0 0 30px rgba(212, 160, 0, 0.3)',
+                    }}
+                >
+                    <img
+                        src="/menu_btn.svg"
+                        alt="Loading"
+                        className="w-16 h-16 animate-spin mx-auto mb-4"
+                        style={{ animationDuration: '1s' }}
+                    />
+                    <p className="text-amber-200/80">Đang kết nối...</p>
                 </div>
             </main>
         );
@@ -189,9 +203,24 @@ export default function RoomPage() {
     if (!roomState) {
         return (
             <main className="min-h-screen flex items-center justify-center">
-                <div className="text-center animate-fadeIn">
-                    <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-slate-400">Đang tải phòng...</p>
+                {/* Backdrop overlay */}
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" />
+                <div
+                    className="relative z-50 p-8 rounded-xl text-center animate-fadeIn"
+                    style={{
+                        background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.95) 0%, rgba(92, 0, 0, 0.98) 100%)',
+                        border: '3px solid #d4a000',
+                        boxShadow: '0 0 30px rgba(212, 160, 0, 0.3)',
+                    }}
+                >
+                    <img
+                        src="/menu_btn.svg"
+                        alt="Loading"
+                        className="w-16 h-16 animate-spin mx-auto mb-4"
+                        style={{ animationDuration: '1s' }}
+                    />
+                    <p className="text-amber-200/80">Đang tải phòng...</p>
+                    <p className="text-amber-200/50 text-xs mt-2">Chờ Host duyệt...</p>
                 </div>
             </main>
         );
@@ -202,23 +231,24 @@ export default function RoomPage() {
             {/* Header */}
             <header className="sticky top-0 z-30 border-b border-white/10" style={{ backgroundColor: 'rgba(74, 4, 4, 0.85)' }}>
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-                    {/* Left: Player count */}
+                    {/* Left: Room info */}
                     <div className="flex items-center gap-4">
-                        <span className="font-mono text-indigo-400 text-sm">
+                        <span className="font-mono text-amber-200 text-lg">
                             {roomState.roomId}
                         </span>
                         <div className="h-5 w-px bg-white/20" />
                         <div className="flex items-center gap-1.5">
-                            <span className="text-lg">👤</span>
-                            <span className="font-bold text-white">
+                            <span className="font-bold text-amber-200 text-lg">
                                 {roomState.players.length}
                             </span>
+                            <img src="/players.svg" alt="Players" className="w-8 h-8" />
                         </div>
                         <div className="h-5 w-px bg-white/20" />
                         <div className="flex items-center gap-1.5">
-                            <span className="text-amber-400 font-bold">
-                                {formatNumber(roomState.betAmount ?? 0)}🧧
+                            <span className="text-amber-400 font-bold text-lg">
+                                {formatNumber(roomState.betAmount ?? 0)}
                             </span>
+                            <img src="/coin.svg" alt="Coin" className="w-8 h-8" />
                         </div>
                     </div>
 
@@ -228,7 +258,7 @@ export default function RoomPage() {
                         className="hover:opacity-80 transition-opacity p-1"
                         title="Menu"
                     >
-                        <img src="/menu_btn.png" alt="Menu" className="w-8 h-8" />
+                        <img src="/menu_btn.svg" alt="Menu" className="w-8 h-8" />
                     </button>
                 </div>
             </header>

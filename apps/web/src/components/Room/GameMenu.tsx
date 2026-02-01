@@ -35,12 +35,37 @@ export function GameMenu({
 }: GameMenuProps) {
     const [betInput, setBetInput] = useState(String(roomState.betAmount ?? 0));
 
+    // State for edit balance modal
+    const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+    const [balanceInput, setBalanceInput] = useState('');
+
     const handleBetChange = (value: string) => {
         setBetInput(value);
         const num = parseInt(value, 10);
         if (!isNaN(num) && num >= 0) {
             onSetBet(num);
         }
+    };
+
+    const openEditBalance = (player: Player) => {
+        setEditingPlayer(player);
+        setBalanceInput(String(player.balance));
+    };
+
+    const confirmEditBalance = () => {
+        if (editingPlayer) {
+            const parsed = parseInt(balanceInput, 10);
+            if (!isNaN(parsed) && parsed >= 0) {
+                onUpdateBalance(editingPlayer.id, parsed);
+            }
+        }
+        setEditingPlayer(null);
+        setBalanceInput('');
+    };
+
+    const cancelEditBalance = () => {
+        setEditingPlayer(null);
+        setBalanceInput('');
     };
 
     return (
@@ -79,7 +104,7 @@ export function GameMenu({
                         onClick={onClose}
                         className="hover:opacity-80 transition-opacity p-1"
                     >
-                        <img src="/menu_btn.png" alt="Đóng" className="w-8 h-8" />
+                        <img src="/menu_btn.svg" alt="Đóng" className="w-8 h-8" />
                     </button>
                 </div>
 
@@ -96,14 +121,16 @@ export function GameMenu({
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <div className="text-xs text-[#d4a000] mb-1">💰 Số dư của bạn</div>
-                                <div className="text-amber-400 font-bold text-lg">
-                                    {myPlayer?.balance.toLocaleString() ?? 0}đ
+                                <div className="text-amber-400 font-bold text-lg flex items-center gap-1">
+                                    {myPlayer?.balance.toLocaleString() ?? 0}
+                                    <img src="/coin.svg" alt="" className="w-5 h-5" />
                                 </div>
                             </div>
                             <div>
                                 <div className="text-xs text-[#d4a000] mb-1">🏆 Tổng pot</div>
-                                <div className="text-emerald-400 font-bold text-lg">
-                                    {((roomState.betAmount || 0) * roomState.players.length).toLocaleString()}đ
+                                <div className="text-emerald-400 font-bold text-lg flex items-center gap-1">
+                                    {((roomState.betAmount || 0) * roomState.players.length).toLocaleString()}
+                                    <img src="/coin.svg" alt="" className="w-5 h-5" />
                                 </div>
                             </div>
                         </div>
@@ -130,7 +157,7 @@ export function GameMenu({
                                     placeholder="0"
                                     min="0"
                                 />
-                                <span className="text-[#d4a000]">🧧</span>
+                                <img src="/coin.svg" alt="" className="w-8 h-8" />
                             </div>
                         </div>
                     )}
@@ -166,25 +193,18 @@ export function GameMenu({
                                     <div className="flex items-center gap-2">
                                         {isHost ? (
                                             <button
-                                                onClick={() => {
-                                                    const newBalance = prompt(
-                                                        `Nhập số dư mới cho ${player.name}:`,
-                                                        String(player.balance)
-                                                    );
-                                                    if (newBalance !== null) {
-                                                        const parsed = parseInt(newBalance, 10);
-                                                        if (!isNaN(parsed) && parsed >= 0) {
-                                                            onUpdateBalance(player.id, parsed);
-                                                        }
-                                                    }
-                                                }}
+                                                onClick={() => openEditBalance(player)}
                                                 className="text-xs text-indigo-400 hover:text-indigo-300"
                                             >
-                                                {player.balance.toLocaleString()}đ
+                                                <span className="flex items-center gap-0.5">
+                                                    {player.balance.toLocaleString()}
+                                                    <img src="/coin.svg" alt="" className="w-3 h-3" />
+                                                </span>
                                             </button>
                                         ) : (
-                                            <span className="text-xs text-slate-400">
-                                                {player.balance.toLocaleString()}đ
+                                            <span className="text-xs text-slate-400 flex items-center gap-0.5">
+                                                {player.balance.toLocaleString()}
+                                                <img src="/coin.svg" alt="" className="w-3 h-3" />
                                             </span>
                                         )}
                                         {player.ready ? (
@@ -225,8 +245,9 @@ export function GameMenu({
                                     >
                                         <div>
                                             <span className="font-medium text-sm">{req.name}</span>
-                                            <span className="text-xs text-slate-400 ml-2">
-                                                {req.balance.toLocaleString()}đ
+                                            <span className="text-xs text-slate-400 ml-2 flex items-center gap-0.5">
+                                                {req.balance.toLocaleString()}
+                                                <img src="/coin.svg" alt="" className="w-3 h-3" />
                                             </span>
                                         </div>
                                         <div className="flex gap-2">
@@ -266,6 +287,127 @@ export function GameMenu({
                     </div>
                 )}
             </div>
+
+            {/* Edit Balance Modal */}
+            {editingPlayer && (
+                <>
+                    {/* Modal Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/70 z-[60] animate-fadeIn"
+                        onClick={cancelEditBalance}
+                    />
+                    {/* Modal */}
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fadeInUp">
+                        <div
+                            className="w-full max-w-sm rounded-xl overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.98) 0%, rgba(60, 0, 0, 1) 100%)',
+                                border: '3px solid #d4a000',
+                                boxShadow: '0 0 40px rgba(212, 160, 0, 0.4)',
+                            }}
+                        >
+                            {/* Header */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3"
+                                style={{
+                                    background: 'rgba(74, 4, 4, 0.9)',
+                                    borderBottom: '2px solid #d4a000',
+                                }}
+                            >
+                                <h3 className="text-lg font-bold text-amber-400">
+                                    Chỉnh số dư
+                                </h3>
+                                <button
+                                    onClick={cancelEditBalance}
+                                    className="text-amber-200/60 hover:text-amber-200 text-xl"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5">
+                                {/* Player Info */}
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="text-xl">
+                                        {editingPlayer.isHost ? '👑' : '👤'}
+                                    </span>
+                                    <span className="text-amber-100 font-medium">
+                                        {editingPlayer.name}
+                                    </span>
+                                </div>
+
+                                {/* Balance Input */}
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        className="rounded-lg p-1 flex-1 transition-all focus-within:border-[#ffd700] focus-within:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3),0_0_10px_rgba(212,160,0,0.4)]"
+                                        style={{
+                                            background: 'rgba(0, 0, 0, 0.3)',
+                                            border: '2px solid #d4a000',
+                                        }}
+                                    >
+                                        <input
+                                            type="number"
+                                            value={balanceInput}
+                                            onChange={(e) => setBalanceInput(e.target.value)}
+                                            className="w-full bg-transparent border-none outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-amber-100 text-xl font-bold px-3 py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            placeholder="0"
+                                            min="0"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <img src="/coin.svg" alt="" className="w-8 h-8" />
+                                </div>
+
+                                {/* Quick Add Buttons */}
+                                <div className="flex gap-2 mt-4">
+                                    {[10000, 50000, 100000].map((amount) => (
+                                        <button
+                                            key={amount}
+                                            onClick={() => setBalanceInput(String(parseInt(balanceInput || '0', 10) + amount))}
+                                            className="flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all"
+                                            style={{
+                                                background: 'rgba(212, 160, 0, 0.2)',
+                                                border: '1px solid #d4a000',
+                                                color: '#d4a000',
+                                            }}
+                                        >
+                                            +{(amount / 1000)}k
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div
+                                className="flex gap-3 p-4"
+                                style={{
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    borderTop: '1px solid rgba(212, 160, 0, 0.3)',
+                                }}
+                            >
+                                <button
+                                    onClick={cancelEditBalance}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'rgba(0, 0, 0, 0.3)',
+                                        border: '2px solid rgba(212, 160, 0, 0.5)',
+                                        color: '#d4a000',
+                                    }}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    onClick={confirmEditBalance}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all btn-traditional-red"
+                                >
+                                    Xác nhận
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </>
     );
 }

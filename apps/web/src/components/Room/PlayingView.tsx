@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { TicketGrid } from '@/components/Ticket';
-import { CurrentNumber, WaitingBoard, DrawnNumbers } from '@/components/Game';
+import { CurrentNumber, WaitingBoard } from '@/components/Game';
 import { cn, vibrate, formatNumber } from '@/lib/utils';
 import type { RoomState, Player } from '@lototet/shared';
 
@@ -161,9 +161,9 @@ export function PlayingView({
             )}
 
             {/* Mobile Layout */}
-            <div className="md:hidden space-y-4">
-                <div className="card p-4">
-                    {/* Số hiện tại */}
+            <div className="md:hidden flex flex-col items-center">
+                {/* Số hiện tại - không có card background */}
+                <div className="w-full flex justify-center">
                     <CurrentNumber
                         number={displayNumber}
                         turnId={displayTurnId}
@@ -180,19 +180,11 @@ export function PlayingView({
                             </button>
                         </div>
                     )}
-
-                    {/* Drawn Numbers */}
-                    <div className="mt-4 pt-4 border-t border-white/10">
-                        <DrawnNumbers
-                            numbers={drawnNumbers}
-                            currentNumber={displayNumber}
-                        />
-                    </div>
                 </div>
 
-                {/* Ticket */}
+                {/* Ticket - điều chỉnh padding cho mobile */}
                 <div
-                    className="relative w-full max-w-md mx-auto"
+                    className="relative w-full max-w-sm mx-auto mt-2"
                     style={{
                         backgroundImage: 'url(/frame.svg)',
                         backgroundSize: '100% 100%',
@@ -200,7 +192,7 @@ export function PlayingView({
                         backgroundPosition: 'center',
                     }}
                 >
-                    <div className="p-6 sm:p-8 flex justify-center">
+                    <div className="p-4 pt-6 pb-8 flex justify-center">
                         <TicketGrid
                             ticket={myPlayer?.ticket}
                             marked={myPlayer?.marked}
@@ -246,8 +238,8 @@ export function PlayingView({
                         backgroundPosition: 'center',
                     }}
                 >
-                    {/* Current Number + Drawn Numbers */}
-                    <div className="p-8 sm:p-10 md:p-12">
+                    {/* Current Number - Centered */}
+                    <div className="p-8 sm:p-10 md:p-12 h-full flex flex-col items-center justify-center min-h-[400px]">
                         {/* Số hiện tại */}
                         <CurrentNumber
                             number={displayNumber}
@@ -265,14 +257,6 @@ export function PlayingView({
                                 </button>
                             </div>
                         )}
-
-                        {/* Drawn Numbers */}
-                        <div className="mt-4 pt-4 border-t border-white/10">
-                            <DrawnNumbers
-                                numbers={drawnNumbers}
-                                currentNumber={displayNumber}
-                            />
-                        </div>
                     </div>
 
                 </aside>
