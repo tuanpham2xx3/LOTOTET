@@ -30,7 +30,7 @@ export function GameControlPanel({
             <div className="card p-4">
                 {/* Current Number Display */}
                 <div className="text-center mb-4">
-                    <CurrentNumber number={currentNumber} turnId={turnId} />
+                    <CurrentNumber number={currentNumber ?? undefined} turnId={turnId} />
                 </div>
 
                 {/* Action Buttons */}

@@ -309,4 +309,214 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             return 0;
         }
     }
+
+    // ==========================================
+    // Stats Tracking (Admin Dashboard)
+    // ==========================================
+
+    private getDateKey(): string {
+        return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+
+    private getMonthKey(): string {
+        return new Date().toISOString().slice(0, 7); // YYYY-MM
+    }
+
+    /**
+     * Increment total connections counter
+     */
+    async incrementTotalConnections(): Promise<void> {
+        try {
+            const pipeline = this.client.pipeline();
+            pipeline.incr(`${this.keyPrefix}stats:total_connections`);
+            pipeline.hincrby(`${this.keyPrefix}stats:daily:${this.getDateKey()}`, 'connections', 1);
+            pipeline.hincrby(`${this.keyPrefix}stats:monthly:${this.getMonthKey()}`, 'connections', 1);
+            await pipeline.exec();
+        } catch (error) {
+            this.logger.error('Failed to increment connections:', error);
+        }
+    }
+
+    /**
+     * Increment total rooms created counter
+     */
+    async incrementTotalRoomsCreated(): Promise<void> {
+        try {
+            const pipeline = this.client.pipeline();
+            pipeline.incr(`${this.keyPrefix}stats:total_rooms_created`);
+            pipeline.hincrby(`${this.keyPrefix}stats:daily:${this.getDateKey()}`, 'rooms_created', 1);
+            pipeline.hincrby(`${this.keyPrefix}stats:monthly:${this.getMonthKey()}`, 'rooms_created', 1);
+            await pipeline.exec();
+        } catch (error) {
+            this.logger.error('Failed to increment rooms created:', error);
+        }
+    }
+
+    /**
+     * Increment total games played counter
+     */
+    async incrementTotalGamesPlayed(): Promise<void> {
+        try {
+            const pipeline = this.client.pipeline();
+            pipeline.incr(`${this.keyPrefix}stats:total_games_played`);
+            pipeline.hincrby(`${this.keyPrefix}stats:daily:${this.getDateKey()}`, 'games_played', 1);
+            pipeline.hincrby(`${this.keyPrefix}stats:monthly:${this.getMonthKey()}`, 'games_played', 1);
+            await pipeline.exec();
+        } catch (error) {
+            this.logger.error('Failed to increment games played:', error);
+        }
+    }
+
+    // ==========================================
+    // Server Health Tracking
+    // ==========================================
+
+    /**
+     * Update server heartbeat (call every 30s)
+     */
+    async updateServerHeartbeat(serverId: string): Promise<void> {
+        try {
+            await this.client.set(
+                `${this.keyPrefix}server:${serverId}:heartbeat`,
+                Date.now().toString(),
+                'EX',
+                60 // Expires in 60 seconds if not updated
+            );
+            await this.client.sadd(`${this.keyPrefix}servers:active`, serverId);
+        } catch (error) {
+            this.logger.error(`Failed to update heartbeat for ${serverId}:`, error);
+        }
+    }
+
+    /**
+     * Set server info
+     */
+    async setServerInfo(serverId: string, info: { port: number; version: string }): Promise<void> {
+        try {
+            await this.client.hset(`${this.keyPrefix}server:${serverId}:info`, {
+                port: info.port.toString(),
+                version: info.version,
+                startedAt: Date.now().toString(),
+            });
+        } catch (error) {
+            this.logger.error(`Failed to set server info for ${serverId}:`, error);
+        }
+    }
+
+    /**
+     * Set current connections for a server
+     */
+    async setServerConnections(serverId: string, count: number): Promise<void> {
+        try {
+            await this.client.set(`${this.keyPrefix}server:${serverId}:connections`, count.toString());
+        } catch (error) {
+            this.logger.error(`Failed to set connections for ${serverId}:`, error);
+        }
+    }
+
+    /**
+     * Remove server from active list (on shutdown)
+     */
+    async removeServer(serverId: string): Promise<void> {
+        try {
+            const pipeline = this.client.pipeline();
+            pipeline.srem(`${this.keyPrefix}servers:active`, serverId);
+            pipeline.del(`${this.keyPrefix}server:${serverId}:heartbeat`);
+            pipeline.del(`${this.keyPrefix}server:${serverId}:connections`);
+            await pipeline.exec();
+        } catch (error) {
+            this.logger.error(`Failed to remove server ${serverId}:`, error);
+        }
+    }
+
+    // ==========================================
+    // Stats Reading (for Admin Service)
+    // ==========================================
+
+    /**
+     * Get overview stats
+     */
+    async getOverviewStats(): Promise<{
+        totalConnections: number;
+        totalRoomsCreated: number;
+        totalGamesPlayed: number;
+        activeRooms: number;
+    }> {
+        try {
+            const [totalConnections, totalRoomsCreated, totalGamesPlayed, activeRooms] = await Promise.all([
+                this.client.get(`${this.keyPrefix}stats:total_connections`),
+                this.client.get(`${this.keyPrefix}stats:total_rooms_created`),
+                this.client.get(`${this.keyPrefix}stats:total_games_played`),
+                this.client.scard(`${this.keyPrefix}rooms:active`),
+            ]);
+
+            return {
+                totalConnections: parseInt(totalConnections || '0'),
+                totalRoomsCreated: parseInt(totalRoomsCreated || '0'),
+                totalGamesPlayed: parseInt(totalGamesPlayed || '0'),
+                activeRooms,
+            };
+        } catch (error) {
+            this.logger.error('Failed to get overview stats:', error);
+            return { totalConnections: 0, totalRoomsCreated: 0, totalGamesPlayed: 0, activeRooms: 0 };
+        }
+    }
+
+    /**
+     * Get daily stats for a specific date
+     */
+    async getDailyStats(date: string): Promise<{ connections: number; roomsCreated: number; gamesPlayed: number }> {
+        try {
+            const stats = await this.client.hgetall(`${this.keyPrefix}stats:daily:${date}`);
+            return {
+                connections: parseInt(stats.connections || '0'),
+                roomsCreated: parseInt(stats.rooms_created || '0'),
+                gamesPlayed: parseInt(stats.games_played || '0'),
+            };
+        } catch (error) {
+            return { connections: 0, roomsCreated: 0, gamesPlayed: 0 };
+        }
+    }
+
+    /**
+     * Get all active servers info
+     */
+    async getActiveServers(): Promise<Array<{
+        serverId: string;
+        connections: number;
+        lastHeartbeat: number;
+        isOnline: boolean;
+    }>> {
+        try {
+            const serverIds = await this.client.smembers(`${this.keyPrefix}servers:active`);
+            const servers: Array<{
+                serverId: string;
+                connections: number;
+                lastHeartbeat: number;
+                isOnline: boolean;
+            }> = [];
+
+            for (const serverId of serverIds) {
+                const [connections, heartbeat] = await Promise.all([
+                    this.client.get(`${this.keyPrefix}server:${serverId}:connections`),
+                    this.client.get(`${this.keyPrefix}server:${serverId}:heartbeat`),
+                ]);
+
+                const lastHeartbeat = parseInt(heartbeat || '0');
+                const isOnline = Date.now() - lastHeartbeat < 60000; // Online if heartbeat within 60s
+
+                servers.push({
+                    serverId,
+                    connections: parseInt(connections || '0'),
+                    lastHeartbeat,
+                    isOnline,
+                });
+            }
+
+            return servers;
+        } catch (error) {
+            this.logger.error('Failed to get active servers:', error);
+            return [];
+        }
+    }
 }

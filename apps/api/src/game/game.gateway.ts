@@ -29,6 +29,7 @@ import {
 } from '@lototet/shared';
 import { WsRateLimiter, RATE_LIMITS } from './rate-limiter';
 import { RoomManager } from './room.manager';
+import { RedisService } from '../redis/redis.service';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
@@ -44,21 +45,48 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     server!: TypedServer;
 
     private rateLimiter = new WsRateLimiter();
+    private readonly serverId = process.env.SERVER_ID || `server-${process.env.PORT || '3011'}`;
+    private connectionCount = 0;
 
     constructor(
         private roomService: RoomService,
         private chatService: RoomChatService,
         private roomManager: RoomManager,
-    ) { }
+        private redis: RedisService,
+    ) {
+        // Register server on startup
+        this.registerServer();
+    }
+
+    private async registerServer() {
+        await this.redis.setServerInfo(this.serverId, {
+            port: parseInt(process.env.PORT || '3011'),
+            version: '1.0.0',
+        });
+        // Start heartbeat
+        this.startHeartbeat();
+    }
+
+    private startHeartbeat() {
+        setInterval(async () => {
+            await this.redis.updateServerHeartbeat(this.serverId);
+        }, 30000); // Every 30 seconds
+    }
 
     // ==================== Connection Lifecycle ====================
 
-    handleConnection(client: TypedSocket) {
+    async handleConnection(client: TypedSocket) {
         console.log(`[Gateway] Client connected: ${client.id}`);
+        this.connectionCount++;
+        await this.redis.incrementTotalConnections();
+        await this.redis.setServerConnections(this.serverId, this.connectionCount);
     }
 
     async handleDisconnect(client: TypedSocket) {
         console.log(`[Gateway] Client disconnected: ${client.id}`);
+        this.connectionCount = Math.max(0, this.connectionCount - 1);
+        await this.redis.setServerConnections(this.serverId, this.connectionCount);
+
         const result = await this.roomService.handleDisconnect(client.id);
         if (result) {
             await this.broadcastRoomState(result.roomId);
@@ -95,6 +123,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         const { roomId, state } = await this.roomService.createRoom(client.id, hostName, hostBalance);
+
+        // Track stats
+        await this.redis.incrementTotalRoomsCreated();
 
         client.join(roomId);
         client.data.roomId = roomId;
@@ -686,6 +717,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const result = await this.roomService.claimBingo(roomId, client.id);
 
         if (result.success) {
+            // Track stats - game completed
+            await this.redis.incrementTotalGamesPlayed();
+
             // Broadcast game ended
             const room = await this.roomService.getRoom(roomId);
             if (room?.winner) {
