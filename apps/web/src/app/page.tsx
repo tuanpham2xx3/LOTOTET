@@ -183,10 +183,14 @@ export default function HomePage() {
               <input
                 type="number"
                 value={balance}
-                onChange={(e) => setBalance(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setBalance(val > 999999 ? 999999 : val);
+                }}
                 placeholder="100000"
                 className="input-traditional"
                 min={10000}
+                max={999999}
                 step={10000}
               />
             </div>

@@ -33,6 +33,11 @@ export function LobbyView({
     // Check if there are pending join requests
     const hasPendingRequests = roomState.pendingRequests.length > 0;
 
+    // Check if player has sufficient balance for the bet
+    const betAmount = roomState.betAmount || 0;
+    const canAffordBet = myPlayer ? myPlayer.balance >= betAmount : false;
+    const insufficientBalance = betAmount > 0 && !canAffordBet;
+
     return (
         <div className="animate-fadeInUp flex justify-center">
             {/* Floating Start Banner - Only for host when all ready AND no pending requests */}
@@ -94,15 +99,22 @@ export function LobbyView({
                         </button>
                         <button
                             onClick={onReady}
-                            disabled={myPlayer?.ready}
+                            disabled={myPlayer?.ready || insufficientBalance}
                             className="flex-1 py-3 px-4 rounded-lg font-bold transition-all disabled:opacity-70 disabled:cursor-not-allowed btn-traditional-red"
                         >
                             {myPlayer?.ready ? 'Đã sẵn sàng' : 'Sẵn sàng'}
                         </button>
                     </div>
 
+                    {/* Insufficient balance warning */}
+                    {insufficientBalance && !myPlayer?.ready && (
+                        <p className="text-center text-red-400 text-sm mt-4">
+                            Số dư không đủ cho mức cược ({betAmount.toLocaleString()} coin)
+                        </p>
+                    )}
+
                     {/* Waiting message for non-hosts */}
-                    {!myPlayer?.ready && (
+                    {!insufficientBalance && !myPlayer?.ready && (
                         <p className="text-center text-slate-500 text-sm mt-4">
                             Chọn vé và ấn "Sẵn sàng" để bắt đầu
                         </p>

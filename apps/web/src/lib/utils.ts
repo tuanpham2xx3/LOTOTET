@@ -19,6 +19,32 @@ export function formatNumber(num: number): string {
 }
 
 /**
+ * Format balance with short notation for large numbers
+ * Numbers > 999,999 will be displayed as M (million) or B (billion)
+ * Examples: 1000000 = 1M, 1100000 = 1.1M, 1000000000 = 1B
+ */
+export function formatBalance(num: number): string {
+    if (num < 1000000) {
+        return num.toLocaleString('vi-VN');
+    }
+
+    const billion = 1000000000;
+    const million = 1000000;
+
+    if (num >= billion) {
+        const value = num / billion;
+        // Show decimal only if needed, max 1 decimal place
+        const formatted = value % 1 === 0 ? value.toString() : value.toFixed(1);
+        return `${formatted}B`;
+    }
+
+    const value = num / million;
+    // Show decimal only if needed, max 1 decimal place
+    const formatted = value % 1 === 0 ? value.toString() : value.toFixed(1);
+    return `${formatted}M`;
+}
+
+/**
  * Generate a random ID
  */
 export function generateId(prefix = ''): string {

@@ -13,7 +13,7 @@ import {
 } from '@/stores/gameStore';
 import { LobbyView, PlayingView, EndedView, GameMenu, PendingRequestsFloat } from '@/components/Room';
 import { ChatBox } from '@/components/Chat';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, formatBalance } from '@/lib/utils';
 
 // Component hiển thị form join phòng hoặc trạng thái chờ duyệt
 function JoinRoomForm({
@@ -219,7 +219,7 @@ function JoinRoomForm({
                                 <div className="flex items-center justify-between text-sm mt-2">
                                     <span className="text-amber-200/60">Số dư:</span>
                                     <span className="text-amber-400 font-medium flex items-center gap-1">
-                                        {balance.toLocaleString()}
+                                        {formatBalance(balance)}
                                         <img src="/coin.svg" alt="" className="w-4 h-4" />
                                     </span>
                                 </div>
@@ -301,10 +301,14 @@ function JoinRoomForm({
                             <input
                                 type="number"
                                 value={balance}
-                                onChange={(e) => setBalance(Number(e.target.value))}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setBalance(val > 999999 ? 999999 : val);
+                                }}
                                 placeholder="100000"
                                 className="input-traditional"
                                 min={10000}
+                                max={999999}
                                 step={10000}
                             />
                         </div>

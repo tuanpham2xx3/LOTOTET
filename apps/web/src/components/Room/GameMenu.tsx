@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatBalance } from '@/lib/utils';
 import type { RoomState, Player, JoinRequest } from '@lototet/shared';
 
 interface GameMenuProps {
@@ -44,20 +44,31 @@ export function GameMenu({
 
     const handleBetChange = (value: string) => {
         // Only allow digits
-        const numericValue = value.replace(/[^0-9]/g, '');
-        // Limit to max 999999
-        const num = parseInt(numericValue, 10);
-        if (!isNaN(num) && num > 999999) {
-            setBetInput('999999');
-            onSetBet(999999);
-            return;
+        let numericValue = value.replace(/[^0-9]/g, '');
+        // Limit to max 6 digits (999999)
+        if (numericValue.length > 6) {
+            numericValue = numericValue.slice(0, 6);
         }
-        setBetInput(numericValue);
-        if (!isNaN(num) && num >= 0) {
-            onSetBet(num);
-        } else if (numericValue === '') {
-            onSetBet(0);
+
+        let num = parseInt(numericValue, 10);
+        if (isNaN(num)) num = 0;
+
+        // Calculate max allowed bet:
+        // 1. Cannot exceed host's balance
+        // 2. Cannot exceed any ready player's balance
+        const hostBalance = myPlayer?.balance ?? 0;
+        const readyPlayers = roomState.players.filter(p => p.ready);
+        const minReadyBalance = readyPlayers.length > 0
+            ? Math.min(...readyPlayers.map(p => p.balance))
+            : Infinity;
+        const maxAllowed = Math.min(hostBalance, minReadyBalance, 999999);
+
+        if (num > maxAllowed) {
+            num = maxAllowed;
         }
+
+        setBetInput(num === 0 && numericValue === '' ? '' : String(num));
+        onSetBet(num);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -145,16 +156,22 @@ export function GameMenu({
                     >
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <div className="text-xs text-[#d4a000] mb-1">💰 Số dư của bạn</div>
+                                <div className="text-xs text-[#d4a000] mb-1 flex items-center gap-1">
+                                    <img src="/your_balance.svg" alt="" className="w-4 h-4" />
+                                    Số dư
+                                </div>
                                 <div className="text-amber-400 font-bold text-lg flex items-center gap-1">
-                                    {myPlayer?.balance.toLocaleString() ?? 0}
+                                    {formatBalance(myPlayer?.balance ?? 0)}
                                     <img src="/coin.svg" alt="" className="w-5 h-5" />
                                 </div>
                             </div>
                             <div>
-                                <div className="text-xs text-[#d4a000] mb-1">🏆 Tổng pot</div>
+                                <div className="text-xs text-[#d4a000] mb-1 flex items-center gap-1">
+                                    <img src="/money_bag.svg" alt="" className="w-4 h-4" />
+                                    Tổng cược
+                                </div>
                                 <div className="text-emerald-400 font-bold text-lg flex items-center gap-1">
-                                    {((roomState.betAmount || 0) * roomState.players.length).toLocaleString()}
+                                    {formatBalance((roomState.betAmount || 0) * roomState.players.length)}
                                     <img src="/coin.svg" alt="" className="w-5 h-5" />
                                 </div>
                             </div>
@@ -162,32 +179,52 @@ export function GameMenu({
                     </div>
 
                     {/* Bet Amount - Host Only */}
-                    {isHost && (
-                        <div
-                            className="rounded-lg p-3"
-                            style={{
-                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                                border: '2px solid #d4a000'
-                            }}
-                        >
-                            <label className="block text-sm text-[#d4a000] mb-2">
-                                Mức cược
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    value={betInput}
-                                    onChange={(e) => handleBetChange(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    className="input-traditional flex-1"
-                                    placeholder="0"
-                                />
-                                <img src="/coin.svg" alt="" className="w-8 h-8" />
+                    {isHost && (() => {
+                        // Calculate max allowed bet for display
+                        const hostBalance = myPlayer?.balance ?? 0;
+                        const readyPlayers = roomState.players.filter(p => p.ready);
+                        const minReadyBalance = readyPlayers.length > 0
+                            ? Math.min(...readyPlayers.map(p => p.balance))
+                            : Infinity;
+                        const maxAllowed = Math.min(hostBalance, minReadyBalance, 999999);
+                        const limitingPlayer = readyPlayers.find(p => p.balance === maxAllowed && p.balance < hostBalance);
+
+                        return (
+                            <div
+                                className="rounded-lg p-3"
+                                style={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                    border: '2px solid #d4a000'
+                                }}
+                            >
+                                <label className="block text-sm text-[#d4a000] mb-2">
+                                    Mức cược
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={betInput}
+                                        onChange={(e) => handleBetChange(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        className="input-traditional flex-1"
+                                        placeholder="0"
+                                    />
+                                    <img src="/coin.svg" alt="" className="w-8 h-8" />
+                                </div>
+                                {/* Show max limit info */}
+                                {maxAllowed < 999999 && (
+                                    <p className="text-xs text-amber-200/60 mt-2">
+                                        Tối đa: {maxAllowed.toLocaleString()}
+                                        {limitingPlayer && (
+                                            <span className="text-amber-400"> (giới hạn bởi {limitingPlayer.name})</span>
+                                        )}
+                                    </p>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Players List */}
                     <div
@@ -208,7 +245,7 @@ export function GameMenu({
                                 >
                                     <div className="flex items-center gap-2">
                                         {player.isHost && (
-                                            <span className="text-amber-400">👑</span>
+                                            <img src="/crown.svg" alt="Chủ phòng" className="w-5 h-5" />
                                         )}
                                         <span className="font-medium text-sm">
                                             {player.name}
@@ -224,13 +261,13 @@ export function GameMenu({
                                                 className="text-xs text-indigo-400 hover:text-indigo-300"
                                             >
                                                 <span className="flex items-center gap-0.5">
-                                                    {player.balance.toLocaleString()}
+                                                    {formatBalance(player.balance)}
                                                     <img src="/coin.svg" alt="" className="w-3 h-3" />
                                                 </span>
                                             </button>
                                         ) : (
                                             <span className="text-xs text-slate-400 flex items-center gap-0.5">
-                                                {player.balance.toLocaleString()}
+                                                {formatBalance(player.balance)}
                                                 <img src="/coin.svg" alt="" className="w-3 h-3" />
                                             </span>
                                         )}
@@ -271,7 +308,7 @@ export function GameMenu({
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-slate-400 flex items-center gap-0.5">
-                                                {req.balance.toLocaleString()}
+                                                {formatBalance(req.balance)}
                                                 <img src="/coin.svg" alt="" className="w-3 h-3" />
                                             </span>
                                             <button
@@ -354,12 +391,25 @@ export function GameMenu({
                                         }}
                                     >
                                         <input
-                                            type="number"
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             value={balanceInput}
-                                            onChange={(e) => setBalanceInput(e.target.value)}
-                                            className="w-full bg-transparent border-none outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-amber-100 text-xl font-bold px-3 py-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            onChange={(e) => {
+                                                // Only allow digits, max 6 characters
+                                                let val = e.target.value.replace(/[^0-9]/g, '');
+                                                if (val.length > 6) {
+                                                    val = val.slice(0, 6);
+                                                }
+                                                const num = parseInt(val, 10);
+                                                if (!isNaN(num) && num > 999999) {
+                                                    setBalanceInput('999999');
+                                                } else {
+                                                    setBalanceInput(val);
+                                                }
+                                            }}
+                                            className="w-full bg-transparent border-none outline-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none text-amber-100 text-xl font-bold px-3 py-2"
                                             placeholder="0"
-                                            min="0"
                                             autoFocus
                                         />
                                     </div>
@@ -371,7 +421,11 @@ export function GameMenu({
                                     {[10000, 50000, 100000].map((amount) => (
                                         <button
                                             key={amount}
-                                            onClick={() => setBalanceInput(String(parseInt(balanceInput || '0', 10) + amount))}
+                                            onClick={() => {
+                                                const currentVal = parseInt(balanceInput || '0', 10);
+                                                const newVal = Math.min(currentVal + amount, 999999);
+                                                setBalanceInput(String(newVal));
+                                            }}
                                             className="flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all"
                                             style={{
                                                 background: 'rgba(212, 160, 0, 0.2)',

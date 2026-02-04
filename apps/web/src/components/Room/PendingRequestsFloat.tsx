@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { JoinRequest } from '@lototet/shared';
+import { formatBalance } from '@/lib/utils';
 
 interface PendingRequestsFloatProps {
     requests: JoinRequest[];
@@ -86,7 +87,7 @@ export function PendingRequestsFloat({
                     {/* Balance & Action Buttons */}
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-amber-200/60 flex items-center gap-1">
-                            {req.balance.toLocaleString()}
+                            {formatBalance(req.balance)}
                             <img src="/coin.svg" alt="" className="w-3 h-3" />
                         </span>
                         <button
