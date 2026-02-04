@@ -89,10 +89,28 @@ export function PlayingView({
 
     // Auto-respond "noNumber" if player doesn't have the current number
     useEffect(() => {
-        if (!currentTurn?.number || !currentTurn?.turnId || !myPlayer?.ticket) return;
-        if (hasResponded) return;
+        console.log('[PlayingView] Auto-noNumber check:', {
+            turnNumber: currentTurn?.number,
+            turnId: currentTurn?.turnId,
+            hasTicket: !!myPlayer?.ticket,
+            hasResponded,
+            lastAutoResponded: lastAutoRespondedTurnRef.current,
+            playerId: myPlayer?.id,
+        });
+
+        if (!currentTurn?.number || !currentTurn?.turnId || !myPlayer?.ticket) {
+            console.log('[PlayingView] Auto-noNumber: Skipping - missing data');
+            return;
+        }
+        if (hasResponded) {
+            console.log('[PlayingView] Auto-noNumber: Skipping - already responded');
+            return;
+        }
         // Prevent double response for same turn
-        if (lastAutoRespondedTurnRef.current === currentTurn.turnId) return;
+        if (lastAutoRespondedTurnRef.current === currentTurn.turnId) {
+            console.log('[PlayingView] Auto-noNumber: Skipping - already auto-responded this turn');
+            return;
+        }
 
         // Check if player has the number on their ticket (and not yet marked)
         let hasNumber = false;
@@ -106,12 +124,15 @@ export function PlayingView({
             if (hasNumber) break;
         }
 
+        console.log('[PlayingView] Auto-noNumber: hasNumber =', hasNumber);
+
         if (!hasNumber) {
             // Auto-send noNumber response
+            console.log('[PlayingView] Auto-noNumber: Sending noNumber for turn', currentTurn.turnId);
             lastAutoRespondedTurnRef.current = currentTurn.turnId;
             onNoNumber();
         }
-    }, [currentTurn?.number, currentTurn?.turnId, hasResponded, myPlayer?.ticket, myPlayer?.marked, onNoNumber]);
+    }, [currentTurn?.number, currentTurn?.turnId, hasResponded, myPlayer?.ticket, myPlayer?.marked, myPlayer?.id, onNoNumber]);
 
     // Check if player can claim BINGO (has a complete row)
     const canBingo = (() => {

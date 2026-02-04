@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { RoomPhase } from '@lototet/shared';
 import {
@@ -518,10 +518,23 @@ export default function RoomPage() {
         });
     };
 
-    const handleNoNumber = () => {
-        if (!currentTurn) return;
-        socket?.emit('turn:noNumber', { turnId: currentTurn.turnId });
-    };
+    const handleNoNumber = useCallback(() => {
+        console.log('[handleNoNumber] Called with currentTurn:', currentTurn, 'socket:', !!socket, 'connected:', socket?.connected);
+        if (!currentTurn) {
+            console.log('[handleNoNumber] No currentTurn, returning');
+            return;
+        }
+        if (!socket) {
+            console.log('[handleNoNumber] No socket, returning');
+            return;
+        }
+        if (!socket.connected) {
+            console.log('[handleNoNumber] Socket not connected, returning');
+            return;
+        }
+        console.log('[handleNoNumber] Emitting turn:noNumber with turnId:', currentTurn.turnId);
+        socket.emit('turn:noNumber', { turnId: currentTurn.turnId });
+    }, [currentTurn, socket]);
 
     const handleBingo = () => {
         socket?.emit('game:bingoClaim');

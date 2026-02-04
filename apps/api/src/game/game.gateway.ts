@@ -48,6 +48,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly serverId = process.env.SERVER_ID || `server-${process.env.PORT || '3011'}`;
     private connectionCount = 0;
 
+    // Queue mechanism to handle race condition when multiple players respond simultaneously
+    // Key: roomId, Value: timeout handle for debounced draw check
+    private pendingDrawChecks: Map<string, NodeJS.Timeout> = new Map();
+    private readonly DRAW_CHECK_DELAY_MS = 100; // Wait 100ms to collect all responses
+
     constructor(
         private roomService: RoomService,
         private chatService: RoomChatService,
@@ -805,16 +810,55 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     /**
-     * Check if all players have responded and auto-draw the next number
+     * Schedule a debounced draw check for a room
+     * This ensures all player responses are collected before deciding to auto-draw
      */
-    private async checkAndAutoDrawNextNumber(roomId: string) {
+    private scheduleDrawCheck(roomId: string) {
+        // Clear any existing pending check for this room
+        const existingTimeout = this.pendingDrawChecks.get(roomId);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+
+        // Schedule a new check after delay
+        const timeout = setTimeout(async () => {
+            this.pendingDrawChecks.delete(roomId);
+            await this.executeDrawCheck(roomId);
+        }, this.DRAW_CHECK_DELAY_MS);
+
+        this.pendingDrawChecks.set(roomId, timeout);
+        console.log(`[Gateway] scheduleDrawCheck: Scheduled draw check for room ${roomId} in ${this.DRAW_CHECK_DELAY_MS}ms`);
+    }
+
+    /**
+     * Execute the actual draw check after debounce delay
+     */
+    private async executeDrawCheck(roomId: string) {
         const room = await this.roomService.getRoom(roomId);
-        if (!room?.game || room.game.turnId === 0) return;
+        console.log(`[Gateway] executeDrawCheck: roomId=${roomId}, turnId=${room?.game?.turnId}, phase=${room?.phase}`);
+
+        if (!room?.game || room.game.turnId === 0) {
+            console.log(`[Gateway] executeDrawCheck: Skipping - no game or turnId is 0`);
+            return;
+        }
 
         const pendingPlayerIds = this.roomService.getPendingPlayers(room);
+        console.log(`[Gateway] executeDrawCheck: pendingPlayerIds=${JSON.stringify(pendingPlayerIds)}, players=${JSON.stringify(room.players.map(p => ({ id: p.id, name: p.name, respondedTurnId: p.respondedTurnId })))}`);
+
         if (pendingPlayerIds.length === 0) {
+            console.log(`[Gateway] executeDrawCheck: All players responded, auto-drawing next number`);
+
+            // Check if ALL players responded with NO_NUMBER
+            const allNoNumber = room.players.every(p => room.game!.turnResponses[p.id] === 'NO_NUMBER');
+
+            // Delay before drawing: 2s if all NO_NUMBER, 1s otherwise
+            const delayMs = allNoNumber ? 2000 : 1000;
+            console.log(`[Gateway] executeDrawCheck: Waiting ${delayMs}ms before auto-draw (allNoNumber=${allNoNumber})`);
+            await this.delay(delayMs);
+
             // All players responded, auto-draw next number
             const drawResult = await this.roomService.autoDrawNumber(roomId);
+            console.log(`[Gateway] executeDrawCheck: drawResult success=${drawResult.success}`);
             if (drawResult.success) {
                 // Emit turn:new to all players
                 this.server.to(roomId).emit('turn:new', {
@@ -824,6 +868,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 // Broadcast updated room state
                 await this.broadcastRoomState(roomId);
             }
+        } else {
+            console.log(`[Gateway] executeDrawCheck: Still waiting for ${pendingPlayerIds.length} players`);
         }
+    }
+
+    /**
+     * Helper delay function
+     */
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Check if all players have responded and auto-draw the next number
+     * Uses debounced scheduling to handle race conditions
+     */
+    private async checkAndAutoDrawNextNumber(roomId: string) {
+        this.scheduleDrawCheck(roomId);
     }
 }

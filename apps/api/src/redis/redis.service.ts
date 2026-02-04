@@ -311,6 +311,98 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     // ==========================================
+    // Distributed Lock Operations
+    // ==========================================
+
+    /**
+     * Acquire a lock for a room (using Redis SETNX pattern)
+     * @param roomId - Room ID to lock
+     * @param lockId - Unique identifier for this lock holder
+     * @param ttlMs - Lock expiration time in milliseconds (default 5000ms)
+     * @returns true if lock acquired, false otherwise
+     */
+    async acquireLock(roomId: string, lockId: string, ttlMs: number = 5000): Promise<boolean> {
+        try {
+            const lockKey = `${this.keyPrefix}lock:room:${roomId}`;
+            // SET NX PX - set if not exists with expiration
+            const result = await this.client.set(lockKey, lockId, 'PX', ttlMs, 'NX');
+            return result === 'OK';
+        } catch (error) {
+            this.logger.error(`Failed to acquire lock for room ${roomId}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Release a lock (only if we own it)
+     * @param roomId - Room ID to unlock
+     * @param lockId - Lock holder ID (must match the one used to acquire)
+     * @returns true if lock released, false if we didn't own it
+     */
+    async releaseLock(roomId: string, lockId: string): Promise<boolean> {
+        try {
+            const lockKey = `${this.keyPrefix}lock:room:${roomId}`;
+            // Use Lua script to ensure atomic check-and-delete
+            const script = `
+                if redis.call("get", KEYS[1]) == ARGV[1] then
+                    return redis.call("del", KEYS[1])
+                else
+                    return 0
+                end
+            `;
+            const result = await this.client.eval(script, 1, lockKey, lockId);
+            return result === 1;
+        } catch (error) {
+            this.logger.error(`Failed to release lock for room ${roomId}:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Execute a function with room lock
+     * Automatically acquires and releases lock, with retry logic
+     * @param roomId - Room ID to lock
+     * @param fn - Function to execute while holding the lock
+     * @param maxRetries - Maximum retry attempts (default 10)
+     * @param retryDelayMs - Delay between retries in ms (default 50)
+     */
+    async withLock<T>(
+        roomId: string,
+        fn: () => Promise<T>,
+        maxRetries: number = 10,
+        retryDelayMs: number = 50,
+    ): Promise<T> {
+        const lockId = `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        let acquired = false;
+        let attempts = 0;
+
+        // Try to acquire lock with retries
+        while (!acquired && attempts < maxRetries) {
+            acquired = await this.acquireLock(roomId, lockId);
+            if (!acquired) {
+                attempts++;
+                await this.delay(retryDelayMs);
+            }
+        }
+
+        if (!acquired) {
+            throw new Error(`Failed to acquire lock for room ${roomId} after ${maxRetries} attempts`);
+        }
+
+        try {
+            // Execute the function while holding the lock
+            return await fn();
+        } finally {
+            // Always release the lock
+            await this.releaseLock(roomId, lockId);
+        }
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ==========================================
     // Stats Tracking (Admin Dashboard)
     // ==========================================
 

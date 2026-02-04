@@ -290,4 +290,16 @@ export class RoomManager {
             }
         }
     }
+
+    /**
+     * Execute a function with room lock (for concurrent-safe operations)
+     * Uses Redis distributed lock when available
+     */
+    async withLock<T>(roomId: string, fn: () => Promise<T>): Promise<T> {
+        if (this.useRedis()) {
+            return this.redis.withLock(roomId, fn);
+        }
+        // No locking needed for in-memory mode (single process)
+        return fn();
+    }
 }

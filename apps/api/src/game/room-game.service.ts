@@ -376,67 +376,70 @@ export class RoomGameService {
         socketId: string,
         turnId: number,
     ): Promise<ServiceResult<void>> {
-        const room = await this.roomManager.get(roomId);
+        // Use lock to prevent race condition when multiple players respond simultaneously
+        return this.roomManager.withLock(roomId, async () => {
+            const room = await this.roomManager.get(roomId);
 
-        if (!room) {
-            return {
-                success: false,
-                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
-            };
-        }
+            if (!room) {
+                return {
+                    success: false,
+                    error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+                };
+            }
 
-        if (room.phase !== RoomPhase.PLAYING || !room.game) {
-            return {
-                success: false,
-                error: { code: ErrorCode.INVALID_PHASE, message: 'Game not active' },
-            };
-        }
+            if (room.phase !== RoomPhase.PLAYING || !room.game) {
+                return {
+                    success: false,
+                    error: { code: ErrorCode.INVALID_PHASE, message: 'Game not active' },
+                };
+            }
 
-        if (room.game.turnId !== turnId) {
-            return {
-                success: false,
-                error: { code: ErrorCode.TURN_NOT_ACTIVE, message: 'Invalid turn' },
-            };
-        }
+            if (room.game.turnId !== turnId) {
+                return {
+                    success: false,
+                    error: { code: ErrorCode.TURN_NOT_ACTIVE, message: 'Invalid turn' },
+                };
+            }
 
-        const player = this.roomManager.findPlayerBySocketId(room, socketId);
+            const player = this.roomManager.findPlayerBySocketId(room, socketId);
 
-        if (!player) {
-            return {
-                success: false,
-                error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Player not found' },
-            };
-        }
+            if (!player) {
+                return {
+                    success: false,
+                    error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Player not found' },
+                };
+            }
 
-        if (player.respondedTurnId === turnId) {
-            return {
-                success: false,
-                error: { code: ErrorCode.ALREADY_RESPONDED, message: 'Already responded' },
-            };
-        }
+            if (player.respondedTurnId === turnId) {
+                return {
+                    success: false,
+                    error: { code: ErrorCode.ALREADY_RESPONDED, message: 'Already responded' },
+                };
+            }
 
-        // Verify player really doesn't have the number
-        if (player.ticket) {
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (player.ticket[r][c] === room.game.activeNumber && !player.marked?.[r][c]) {
-                        return {
-                            success: false,
-                            error: {
-                                code: ErrorCode.CANNOT_NO_NUMBER_HAVE_NUMBER,
-                                message: 'You have this number on your ticket',
-                            },
-                        };
+            // Verify player really doesn't have the number
+            if (player.ticket) {
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        if (player.ticket[r][c] === room.game.activeNumber && !player.marked?.[r][c]) {
+                            return {
+                                success: false,
+                                error: {
+                                    code: ErrorCode.CANNOT_NO_NUMBER_HAVE_NUMBER,
+                                    message: 'You have this number on your ticket',
+                                },
+                            };
+                        }
                     }
                 }
             }
-        }
 
-        player.respondedTurnId = turnId;
-        room.game.turnResponses[player.id] = 'NO_NUMBER';
-        await this.roomManager.update(roomId, room);
+            player.respondedTurnId = turnId;
+            room.game.turnResponses[player.id] = 'NO_NUMBER';
+            await this.roomManager.update(roomId, room);
 
-        return { success: true, data: undefined };
+            return { success: true, data: undefined };
+        });
     }
 
     /**
