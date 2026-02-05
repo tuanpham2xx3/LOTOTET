@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useChatMessages, useSocket, useMyPlayerId } from '@/stores/gameStore';
+import { useChatMessages, useSocket, useMyPlayerId, useRoomState } from '@/stores/gameStore';
 import { ChatMessageItem } from './ChatMessage';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import type { ChatMessage } from '@lototet/shared';
@@ -16,6 +16,7 @@ interface FloatingMessage extends ChatMessage {
 
 export function ChatBox() {
     const socket = useSocket();
+    const roomState = useRoomState();
     const myPlayerId = useMyPlayerId();
     const messages = useChatMessages();
     const [input, setInput] = useState('');
@@ -87,6 +88,8 @@ export function ChatBox() {
                 try {
                     const formData = new FormData();
                     formData.append('file', blob, 'voice-message.webm');
+                    formData.append('roomId', roomState?.roomId || '');
+                    formData.append('socketId', socket.id || '');
 
                     console.log('[Chat] Uploading to:', `${API_URL}/upload/audio`);
                     const response = await fetch(`${API_URL}/upload/audio`, {

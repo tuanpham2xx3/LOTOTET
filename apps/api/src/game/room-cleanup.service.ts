@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { RoomManager } from './room.manager';
+import { UploadService } from '../upload/upload.service';
 
 /**
  * Room Cleanup Service
@@ -15,7 +16,10 @@ export class RoomCleanupService implements OnModuleInit, OnModuleDestroy {
     private readonly INACTIVE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes of inactivity
     private readonly HOST_DISCONNECT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes after host disconnect
 
-    constructor(private readonly roomManager: RoomManager) { }
+    constructor(
+        private readonly roomManager: RoomManager,
+        private readonly uploadService: UploadService,
+    ) { }
 
     onModuleInit() {
         this.logger.log('🧹 Room Cleanup Service started');
@@ -70,8 +74,10 @@ export class RoomCleanupService implements OnModuleInit, OnModuleDestroy {
             }
         }
 
-        // Delete rooms
+        // Delete rooms and their audio files
         for (const roomId of roomsToDelete) {
+            // Clean up audio files first
+            this.uploadService.deleteRoomAudio(roomId);
             await this.roomManager.delete(roomId);
         }
 

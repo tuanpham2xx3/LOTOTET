@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { GameGateway } from './game.gateway';
 import { RoomService } from './room.service';
 import { RoomManager } from './room.manager';
@@ -7,8 +7,10 @@ import { RoomTicketService } from './room-ticket.service';
 import { RoomGameService } from './room-game.service';
 import { RoomChatService } from './room-chat.service';
 import { RoomCleanupService } from './room-cleanup.service';
+import { UploadModule } from '../upload/upload.module';
 
 @Module({
+    imports: [forwardRef(() => UploadModule)],
     providers: [
         GameGateway,
         RoomService,
@@ -19,5 +21,7 @@ import { RoomCleanupService } from './room-cleanup.service';
         RoomChatService,
         RoomCleanupService,
     ],
+    exports: [RoomManager],
 })
 export class GameModule { }
+
