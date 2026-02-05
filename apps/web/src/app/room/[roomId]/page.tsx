@@ -376,6 +376,7 @@ export default function RoomPage() {
     const [pendingPlayerIds, setPendingPlayerIds] = useState<string[]>([]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [showRulesModal, setShowRulesModal] = useState(false);
     const [copyNotification, setCopyNotification] = useState<string | null>(null);
     const [showJoinForm, setShowJoinForm] = useState(false);
     const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
@@ -690,6 +691,93 @@ export default function RoomPage() {
                 </>
             )}
 
+            {/* Rules Modal */}
+            {showRulesModal && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                        onClick={() => setShowRulesModal(false)}
+                    />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div
+                            className="w-full max-w-md rounded-xl animate-fadeIn max-h-[80vh] overflow-hidden flex flex-col"
+                            style={{
+                                background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.98) 0%, rgba(92, 0, 0, 0.99) 100%)',
+                                border: '3px solid #d4a000',
+                                boxShadow: '0 0 40px rgba(212, 160, 0, 0.4)',
+                            }}
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-amber-200/20">
+                                <h3 className="text-xl font-bold text-amber-200">
+                                    Luật chơi LÔ TÔ TẾT
+                                </h3>
+                                <button
+                                    onClick={() => setShowRulesModal(false)}
+                                    className="text-amber-200/60 hover:text-amber-200 transition-colors text-2xl"
+                                >
+                                    ×
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-4 overflow-y-auto flex-1 text-amber-200/90 text-sm space-y-4">
+                                <div>
+                                    <h4 className="font-bold text-amber-400 mb-2">Luật phòng</h4>
+                                    <ul className="list-disc list-inside space-y-1 pl-2">
+                                        <li>Nút bắt đầu chỉ hiện khi tất cả mọi người trong phòng đã sẵn sàng</li>
+                                        <li>Khi có yêu cầu vào phòng mới, nút bắt đầu sẽ ẩn đi</li>
+                                        <li>Chủ phòng có quyền duyệt người vào phòng và chỉnh sửa số dư của tất cả người chơi</li>
+                                        <li>Chủ phòng có quyền loại người chơi</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-amber-400 mb-2">Lưu ý</h4>
+                                    <ul className="list-disc list-inside space-y-1 pl-2">
+                                        <li>Tất cả người chơi phải sẵn sàng trước khi bắt đầu</li>
+                                        <li>Cần tối thiểu 2 người để chơi</li>
+                                        <li>Sau khi bắt đầu không thể nhận yêu cầu vào phòng</li>
+                                        <li>Không thể loại người chơi sau khi bắt đầu</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-amber-400 mb-2">Cách chơi</h4>
+                                    <ul className="list-disc list-inside space-y-1 pl-2">
+                                        <li>Mỗi người nhận 1 vé số với các số ngẫu nhiên</li>
+                                        <li>Chủ phòng sẽ quay số (từ 1-90)</li>
+                                        <li>Khi số được gọi, người chơi đánh dấu ô có số đó trên vé</li>
+                                        <li>Nếu vé không có số đó, không cần làm gì</li>
+                                        <li>Lượt quay số sẽ tự động sau khi tất cả người chơi đã đánh dấu hoặc không có số</li>
+                                        <li>CHIẾN THẮNG khi được 5 số hàng ngang bất kì, ấn nút BINGO để giành chiến thắng</li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-bold text-amber-400 mb-2">Tiền cược</h4>
+                                    <ul className="list-disc list-inside space-y-1 pl-2">
+                                        <li>Chủ phòng đặt mức cược cho mỗi ván</li>
+                                        <li>Người thắng sẽ nhận tiền cược từ tất cả người chơi khác</li>
+                                        <li>Người thua mất số tiền cược đã đặt</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-4 border-t border-amber-200/20">
+                                <button
+                                    onClick={() => setShowRulesModal(false)}
+                                    className="w-full py-3 rounded-lg bg-amber-200/10 text-amber-200 hover:bg-amber-200/20 transition-colors font-medium"
+                                >
+                                    Đã hiểu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Header */}
             <header className="sticky top-0 z-30 border-b border-white/10" style={{ backgroundColor: 'rgba(74, 4, 4, 0.85)' }}>
                 <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -718,14 +806,23 @@ export default function RoomPage() {
                         </div>
                     </div>
 
-                    {/* Right: Menu button */}
-                    <button
-                        onClick={() => setMenuOpen(true)}
-                        className="hover:opacity-80 transition-opacity p-1"
-                        title="Menu"
-                    >
-                        <img src="/menu_btn.svg" alt="Menu" className="w-8 h-8" />
-                    </button>
+                    {/* Right: Rules + Menu button */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowRulesModal(true)}
+                            className="px-3 py-1.5 rounded-lg text-amber-200 font-bold text-sm hover:bg-amber-200/10 transition-colors border border-amber-200/30 hover:border-amber-200/50"
+                            title="Luật chơi"
+                        >
+                            LUẬT
+                        </button>
+                        <button
+                            onClick={() => setMenuOpen(true)}
+                            className="hover:opacity-80 transition-opacity p-1"
+                            title="Menu"
+                        >
+                            <img src="/menu_btn.svg" alt="Menu" className="w-8 h-8" />
+                        </button>
+                    </div>
                 </div>
             </header>
 
