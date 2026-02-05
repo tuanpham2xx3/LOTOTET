@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
+import compression from 'compression';
+import { LoggingInterceptor } from './common/logging.interceptor';
 
 const logger = new Logger('Bootstrap');
 
@@ -31,6 +33,12 @@ function isAllowedOrigin(origin: string | undefined): boolean {
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+    // Enable response compression (gzip)
+    app.use(compression());
+
+    // Enable request logging
+    app.useGlobalInterceptors(new LoggingInterceptor());
+
     // Enable CORS with origin validation
     app.enableCors({
         origin: (origin, callback) => {
@@ -55,5 +63,7 @@ async function bootstrap() {
     const port = process.env.PORT || 3010;
     await app.listen(port);
     logger.log(`🚀 LOTOTET Backend running on http://localhost:${port}`);
+    logger.log(`📦 Response compression: enabled`);
+    logger.log(`📝 Request logging: enabled`);
 }
 bootstrap();
