@@ -133,4 +133,12 @@ export class RoomService {
     restartGame(roomId: string, hostSocketId: string) {
         return this.gameService.restartGame(roomId, hostSocketId);
     }
+
+    forfeitPlayer(roomId: string, socketId: string) {
+        return this.gameService.forfeitPlayer(roomId, socketId);
+    }
+
+    cancelGame(roomId: string, hostSocketId: string) {
+        return this.gameService.cancelGame(roomId, hostSocketId);
+    }
 }

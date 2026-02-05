@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { cn, formatBalance } from '@/lib/utils';
-import type { RoomState, Player, JoinRequest } from '@lototet/shared';
+import type { RoomState, Player, JoinRequest, RoomPhase } from '@lototet/shared';
+import { RoomPhase as RoomPhaseEnum } from '@lototet/shared';
 
 interface GameMenuProps {
     isOpen: boolean;
@@ -17,6 +18,8 @@ interface GameMenuProps {
     onStartGame: () => void;
     onUpdateBalance: (playerId: string, balance: number) => void;
     onKickPlayer: (playerId: string) => void;
+    onForfeit?: () => void; // Player bỏ cuộc
+    onCancelGame?: () => void; // Host hủy trận
 }
 
 export function GameMenu({
@@ -32,6 +35,8 @@ export function GameMenu({
     onStartGame,
     onUpdateBalance,
     onKickPlayer,
+    onForfeit,
+    onCancelGame,
 }: GameMenuProps) {
     const [betInput, setBetInput] = useState(String(roomState.betAmount ?? 0));
 
@@ -41,6 +46,10 @@ export function GameMenu({
 
     // State for kick confirmation modal
     const [kickingPlayer, setKickingPlayer] = useState<Player | null>(null);
+
+    // State for forfeit/cancel confirmation modals
+    const [showForfeitConfirm, setShowForfeitConfirm] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
     const handleBetChange = (value: string) => {
         // Only allow digits
@@ -329,6 +338,45 @@ export function GameMenu({
                             </div>
                         </div>
                     )}
+
+                    {/* Game Controls - During PLAYING phase */}
+                    {roomState.phase === RoomPhaseEnum.PLAYING && (
+                        <div
+                            className="rounded-lg p-3"
+                            style={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                border: '2px solid #d4a000'
+                            }}
+                        >
+                            {isHost ? (
+                                /* Host: Cancel Game button */
+                                <button
+                                    onClick={() => setShowCancelConfirm(true)}
+                                    className="w-full py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%)',
+                                        border: '2px solid #fca5a5',
+                                        color: '#fef2f2',
+                                    }}
+                                >
+                                    Hủy trận
+                                </button>
+                            ) : (
+                                /* Player: Forfeit button */
+                                <button
+                                    onClick={() => setShowForfeitConfirm(true)}
+                                    className="w-full py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%)',
+                                        border: '2px solid #fca5a5',
+                                        color: '#fef2f2',
+                                    }}
+                                >
+                                    Bỏ cuộc
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -545,6 +593,182 @@ export function GameMenu({
                                     className="flex-1 py-3 rounded-lg font-bold transition-all btn-traditional-red"
                                 >
                                     Đuổi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Forfeit Confirmation Modal */}
+            {showForfeitConfirm && (
+                <>
+                    {/* Modal Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/70 z-[60] animate-fadeIn"
+                        onClick={() => setShowForfeitConfirm(false)}
+                    />
+                    {/* Modal */}
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fadeInUp">
+                        <div
+                            className="w-full max-w-sm rounded-xl overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.98) 0%, rgba(60, 0, 0, 1) 100%)',
+                                border: '3px solid #d4a000',
+                                boxShadow: '0 0 40px rgba(212, 160, 0, 0.4)',
+                            }}
+                        >
+                            {/* Header */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3"
+                                style={{
+                                    background: 'rgba(74, 4, 4, 0.9)',
+                                    borderBottom: '2px solid #d4a000',
+                                }}
+                            >
+                                <h3 className="text-lg font-bold text-amber-400">
+                                    Xác nhận bỏ cuộc
+                                </h3>
+                                <button
+                                    onClick={() => setShowForfeitConfirm(false)}
+                                    className="text-amber-200/60 hover:text-amber-200 text-xl"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5 text-center">
+                                <div className="mb-4 text-4xl">🏳️</div>
+                                <p className="text-amber-100 mb-2">
+                                    Bạn có chắc muốn bỏ cuộc?
+                                </p>
+                                <p className="text-sm text-amber-200/60">
+                                    Tiền cược của bạn sẽ ở lại trong pot và bạn sẽ rời khỏi phòng.
+                                </p>
+                            </div>
+
+                            {/* Footer */}
+                            <div
+                                className="flex gap-3 p-4"
+                                style={{
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    borderTop: '1px solid rgba(212, 160, 0, 0.3)',
+                                }}
+                            >
+                                <button
+                                    onClick={() => setShowForfeitConfirm(false)}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'rgba(0, 0, 0, 0.3)',
+                                        border: '2px solid rgba(212, 160, 0, 0.5)',
+                                        color: '#d4a000',
+                                    }}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onForfeit?.();
+                                        setShowForfeitConfirm(false);
+                                        onClose();
+                                    }}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%)',
+                                        border: '2px solid #fca5a5',
+                                        color: '#fef2f2',
+                                    }}
+                                >
+                                    Bỏ cuộc
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Cancel Game Confirmation Modal */}
+            {showCancelConfirm && (
+                <>
+                    {/* Modal Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/70 z-[60] animate-fadeIn"
+                        onClick={() => setShowCancelConfirm(false)}
+                    />
+                    {/* Modal */}
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fadeInUp">
+                        <div
+                            className="w-full max-w-sm rounded-xl overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.98) 0%, rgba(60, 0, 0, 1) 100%)',
+                                border: '3px solid #d4a000',
+                                boxShadow: '0 0 40px rgba(212, 160, 0, 0.4)',
+                            }}
+                        >
+                            {/* Header */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3"
+                                style={{
+                                    background: 'rgba(74, 4, 4, 0.9)',
+                                    borderBottom: '2px solid #d4a000',
+                                }}
+                            >
+                                <h3 className="text-lg font-bold text-amber-400">
+                                    Xác nhận hủy trận
+                                </h3>
+                                <button
+                                    onClick={() => setShowCancelConfirm(false)}
+                                    className="text-amber-200/60 hover:text-amber-200 text-xl"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5 text-center">
+                                <div className="mb-4 text-4xl">⚠️</div>
+                                <p className="text-amber-100 mb-2">
+                                    Bạn có chắc muốn hủy trận?
+                                </p>
+                                <p className="text-sm text-amber-200/60">
+                                    Tiền cược sẽ được hoàn lại cho tất cả người chơi và phòng sẽ quay về lobby.
+                                </p>
+                            </div>
+
+                            {/* Footer */}
+                            <div
+                                className="flex gap-3 p-4"
+                                style={{
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    borderTop: '1px solid rgba(212, 160, 0, 0.3)',
+                                }}
+                            >
+                                <button
+                                    onClick={() => setShowCancelConfirm(false)}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'rgba(0, 0, 0, 0.3)',
+                                        border: '2px solid rgba(212, 160, 0, 0.5)',
+                                        color: '#d4a000',
+                                    }}
+                                >
+                                    Tiếp tục chơi
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onCancelGame?.();
+                                        setShowCancelConfirm(false);
+                                        onClose();
+                                    }}
+                                    className="flex-1 py-3 rounded-lg font-bold transition-all"
+                                    style={{
+                                        background: 'linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%)',
+                                        border: '2px solid #fca5a5',
+                                        color: '#fef2f2',
+                                    }}
+                                >
+                                    Hủy trận
                                 </button>
                             </div>
                         </div>

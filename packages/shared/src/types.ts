@@ -49,6 +49,7 @@ export interface Player {
   ticket?: Ticket;
   marked?: boolean[][]; // 9x9 grid of marked cells
   respondedTurnId?: number; // Last turn this player responded to
+  forfeited?: boolean; // Player đã bỏ cuộc
 }
 
 /**

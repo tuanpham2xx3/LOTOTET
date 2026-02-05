@@ -51,6 +51,8 @@ export interface ClientToServerEvents {
   'turn:noNumber': (payload: { turnId: number }) => void;
   'game:bingoClaim': () => void;
   'game:restart': () => void;
+  'game:forfeit': () => void; // Player bỏ cuộc
+  'game:cancel': () => void; // Host hủy trận
 
   // Chat
   'chat:send': (payload: { content: string; audioUrl?: string }) => void;
@@ -76,6 +78,8 @@ export interface ServerToClientEvents {
 
   // Player events
   'player:kicked': (payload: { reason: string }) => void;
+  'player:forfeited': (payload: { playerId: string; playerName: string }) => void;
+  'game:cancelled': (payload: { reason: string }) => void;
 
   // Error handling
   error: (payload: ErrorPayload) => void;

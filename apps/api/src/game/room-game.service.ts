@@ -544,8 +544,161 @@ export class RoomGameService {
     getPendingPlayers(room: RoomState): string[] {
         if (!room.game) return [];
         return room.players
-            .filter((p) => p.respondedTurnId !== room.game!.turnId)
+            .filter((p) => !p.forfeited && p.respondedTurnId !== room.game!.turnId)
             .map((p) => p.id);
+    }
+
+    /**
+     * Get count of active (non-forfeited) players
+     */
+    getActivePlayerCount(room: RoomState): number {
+        return room.players.filter((p) => !p.forfeited).length;
+    }
+
+    /**
+     * Player forfeits (gives up) during game
+     * - Player is removed from room
+     * - Their bet stays in pot
+     * - If only 1 player remains, they win automatically
+     */
+    async forfeitPlayer(roomId: string, socketId: string): Promise<ServiceResult<{
+        forfeitedPlayer: Player;
+        autoWin?: { winner: Player; prize: number };
+    }>> {
+        const room = await this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        if (room.phase !== RoomPhase.PLAYING || !room.game) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Game not active' },
+            };
+        }
+
+        const player = this.roomManager.findPlayerBySocketId(room, socketId);
+
+        if (!player) {
+            return {
+                success: false,
+                error: { code: ErrorCode.PLAYER_NOT_FOUND, message: 'Player not found' },
+            };
+        }
+
+        if (player.isHost) {
+            return {
+                success: false,
+                error: { code: ErrorCode.NOT_HOST, message: 'Host cannot forfeit, use cancel instead' },
+            };
+        }
+
+        if (player.forfeited) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ALREADY_RESPONDED, message: 'Already forfeited' },
+            };
+        }
+
+        // Mark player as forfeited
+        player.forfeited = true;
+        console.log(`[Game] ${player.name} forfeited in room ${roomId}`);
+
+        // Remove player from room
+        room.players = room.players.filter((p) => p.id !== player.id);
+
+        // Check for auto-win condition (only 1 active player left)
+        const activePlayers = room.players.filter((p) => !p.forfeited);
+        let autoWin: { winner: Player; prize: number } | undefined;
+
+        if (activePlayers.length === 1) {
+            const winner = activePlayers[0];
+            const betAmount = room.betAmount || 0;
+            // Prize = total pot (all original players' bets)
+            // We need to count forfeited player + remaining players
+            const totalPlayers = room.players.length + 1; // +1 for the player we just removed
+            const prize = betAmount * totalPlayers;
+
+            console.log(`[Game] Auto-win: ${winner.name} wins! Prize: ${prize}`);
+            winner.balance += prize;
+
+            room.phase = RoomPhase.ENDED;
+            room.winner = {
+                playerId: winner.id,
+                playerName: winner.name,
+                winningRow: -1, // No winning row, won by forfeit
+                prize,
+            };
+
+            autoWin = { winner, prize };
+        }
+
+        await this.roomManager.update(roomId, room);
+
+        return { success: true, data: { forfeitedPlayer: player, autoWin } };
+    }
+
+    /**
+     * Host cancels the game
+     * - Refunds all bets to players (using initialBalances)
+     * - Returns to LOBBY phase
+     */
+    async cancelGame(roomId: string, hostSocketId: string): Promise<ServiceResult<void>> {
+        const room = await this.roomManager.get(roomId);
+
+        if (!room) {
+            return {
+                success: false,
+                error: { code: ErrorCode.ROOM_NOT_FOUND, message: 'Room not found' },
+            };
+        }
+
+        if (!this.roomManager.isHost(room, hostSocketId)) {
+            return {
+                success: false,
+                error: { code: ErrorCode.NOT_HOST, message: 'Only host can cancel game' },
+            };
+        }
+
+        if (room.phase !== RoomPhase.PLAYING) {
+            return {
+                success: false,
+                error: { code: ErrorCode.INVALID_PHASE, message: 'Game not active' },
+            };
+        }
+
+        console.log(`[Game] Host cancelled game in room ${roomId}`);
+
+        // Restore initial balances for all players
+        if (room.initialBalances) {
+            for (const player of room.players) {
+                if (room.initialBalances[player.id] !== undefined) {
+                    console.log(`[Game] Restoring ${player.name} balance: ${player.balance} -> ${room.initialBalances[player.id]}`);
+                    player.balance = room.initialBalances[player.id];
+                }
+            }
+        }
+
+        // Reset to lobby
+        room.phase = RoomPhase.LOBBY;
+        room.game = undefined;
+        room.winner = undefined;
+
+        for (const player of room.players) {
+            player.ticket = generateTicket();
+            player.marked = Array(9).fill(null).map(() => Array(9).fill(false));
+            player.ready = false;
+            player.respondedTurnId = undefined;
+            player.forfeited = undefined;
+        }
+
+        await this.roomManager.update(roomId, room);
+
+        return { success: true, data: undefined };
     }
 
     // Private helpers

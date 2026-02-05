@@ -788,6 +788,85 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
+    @SubscribeMessage('game:forfeit')
+    async handleForfeit(@ConnectedSocket() client: TypedSocket) {
+        console.log(`[Gateway] game:forfeit from ${client.id}`);
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
+        }
+
+        const result = await this.roomService.forfeitPlayer(roomId, client.id);
+
+        if (result.success) {
+            const { forfeitedPlayer, autoWin } = result.data;
+
+            // Notify room about forfeit
+            this.server.to(roomId).emit('player:forfeited', {
+                playerId: forfeitedPlayer.id,
+                playerName: forfeitedPlayer.name,
+            });
+
+            // Check if auto-win triggered
+            if (autoWin) {
+                this.server.to(roomId).emit('game:ended', {
+                    winner: {
+                        playerId: autoWin.winner.id,
+                        playerName: autoWin.winner.name,
+                        winningRow: -1, // Won by forfeit
+                    },
+                });
+            }
+
+            // Broadcast updated state
+            await this.broadcastRoomState(roomId);
+
+            // Disconnect the forfeiting player
+            client.emit('player:forfeited', {
+                playerId: forfeitedPlayer.id,
+                playerName: forfeitedPlayer.name,
+            });
+            client.leave(roomId);
+
+            // Delay disconnect to allow client to receive the event
+            setTimeout(() => {
+                client.disconnect(true);
+            }, 1000);
+
+            // Schedule draw check in case forfeit resolves pending responses
+            if (!autoWin) {
+                this.scheduleDrawCheck(roomId);
+            }
+        } else {
+            return this.sendError(client, result.error.code, result.error.message);
+        }
+    }
+
+    @SubscribeMessage('game:cancel')
+    async handleCancelGame(@ConnectedSocket() client: TypedSocket) {
+        console.log(`[Gateway] game:cancel from ${client.id}`);
+
+        const roomId = client.data.roomId;
+        if (!roomId) {
+            return this.sendError(client, ErrorCode.NOT_IN_ROOM, 'Not in room');
+        }
+
+        const result = await this.roomService.cancelGame(roomId, client.id);
+
+        if (result.success) {
+            // Notify all players about cancellation
+            this.server.to(roomId).emit('game:cancelled', {
+                reason: 'Host đã hủy trận đấu. Tiền cược đã được hoàn lại.',
+            });
+
+            // Broadcast updated state (now in LOBBY)
+            await this.broadcastRoomState(roomId);
+        } else {
+            return this.sendError(client, result.error.code, result.error.message);
+        }
+    }
+
     // ==================== Chat ====================
 
     @SubscribeMessage('chat:send')

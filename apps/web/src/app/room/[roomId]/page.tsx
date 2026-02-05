@@ -455,6 +455,40 @@ export default function RoomPage() {
         };
     }, [socket, reset, roomId, router]);
 
+    // Listen for forfeit events
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleForfeited = (payload: { playerId: string; playerName: string }) => {
+            console.log('[Room] Player forfeited:', payload);
+            setCopyNotification(`${payload.playerName} đã bỏ cuộc!`);
+            setTimeout(() => setCopyNotification(null), 3000);
+        };
+
+        socket.on('player:forfeited', handleForfeited);
+
+        return () => {
+            socket.off('player:forfeited', handleForfeited);
+        };
+    }, [socket]);
+
+    // Listen for game cancelled events
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleCancelled = (payload: { reason: string }) => {
+            console.log('[Room] Game cancelled:', payload);
+            setCopyNotification(payload.reason || 'Trận đấu đã bị hủy!');
+            setTimeout(() => setCopyNotification(null), 4000);
+        };
+
+        socket.on('game:cancelled', handleCancelled);
+
+        return () => {
+            socket.off('game:cancelled', handleCancelled);
+        };
+    }, [socket]);
+
     // Reconnect to room if needed
     useEffect(() => {
         if (!socket || !connected || showJoinForm) return;
@@ -557,6 +591,14 @@ export default function RoomPage() {
 
     const handleKickPlayer = (playerId: string) => {
         socket?.emit('room:kickPlayer', { playerId });
+    };
+
+    const handleForfeit = () => {
+        socket?.emit('game:forfeit');
+    };
+
+    const handleCancelGame = () => {
+        socket?.emit('game:cancel');
     };
 
     // ==================== Render ====================
@@ -729,6 +771,8 @@ export default function RoomPage() {
                                         <li>Khi có yêu cầu vào phòng mới, nút bắt đầu sẽ ẩn đi</li>
                                         <li>Chủ phòng có quyền duyệt người vào phòng và chỉnh sửa số dư của tất cả người chơi</li>
                                         <li>Chủ phòng có quyền loại người chơi</li>
+                                        <li>Chủ phòng có quyền hủy trận ở menu</li>
+                                        <li>Người chơi có quyền bỏ cuộc ở menu</li>
                                     </ul>
                                 </div>
 
@@ -739,6 +783,8 @@ export default function RoomPage() {
                                         <li>Cần tối thiểu 2 người để chơi</li>
                                         <li>Sau khi bắt đầu không thể nhận yêu cầu vào phòng</li>
                                         <li>Không thể loại người chơi sau khi bắt đầu</li>
+                                        <li>Nếu không chơi tiếp cần ấn nút bỏ cuộc để tiếp tục ván</li>
+                                        <li>Nếu người chơi không bỏ cuộc thì không thể tiếp tục trò chơi, chủ phòng hủy trận và bắt đầu ván mới</li>
                                     </ul>
                                 </div>
 
@@ -840,6 +886,8 @@ export default function RoomPage() {
                 onStartGame={handleStartGame}
                 onUpdateBalance={handleUpdateBalance}
                 onKickPlayer={handleKickPlayer}
+                onForfeit={handleForfeit}
+                onCancelGame={handleCancelGame}
             />
 
             {/* Content */}
