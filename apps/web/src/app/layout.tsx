@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import BackgroundMusic from '@/components/BackgroundMusic';
 
 export const metadata: Metadata = {
   title: 'LOTOTET - Game Lô Tô Online',
@@ -26,6 +27,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <BackgroundMusic />
         {children}
       </body>
     </html>
