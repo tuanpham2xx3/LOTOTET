@@ -34,9 +34,38 @@ import { RedisService } from '../redis/redis.service';
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 
+/**
+ * Check if origin is allowed for WebSocket connection
+ * Allowed patterns:
+ * - *.iceteadev.site (any subdomain)
+ * - localhost:* (any port)
+ */
+function isAllowedOrigin(origin: string | undefined): boolean {
+    if (!origin) return true; // Allow requests without origin
+
+    // localhost with any port
+    if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+        return true;
+    }
+
+    // *.iceteadev.site (including iceteadev.site itself)
+    if (/^https?:\/\/([a-zA-Z0-9-]+\.)?iceteadev\.site(:\d+)?$/.test(origin)) {
+        return true;
+    }
+
+    return false;
+}
+
 @WebSocketGateway({
     cors: {
-        origin: '*',
+        origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+            if (isAllowedOrigin(origin)) {
+                callback(null, true);
+            } else {
+                console.warn(`[WebSocket] Blocked origin: ${origin}`);
+                callback(null, false);
+            }
+        },
         credentials: true,
     },
 })
