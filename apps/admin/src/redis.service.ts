@@ -338,4 +338,25 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             return { connections: 0, roomsCreated: 0, gamesPlayed: 0 };
         }
     }
+
+    // ==========================================
+    // Broadcast
+    // ==========================================
+
+    /**
+     * Publish broadcast message to all game servers
+     */
+    async publishBroadcast(message: string): Promise<boolean> {
+        try {
+            await this.client.publish(`${this.keyPrefix}broadcast`, JSON.stringify({
+                message,
+                timestamp: Date.now(),
+            }));
+            this.logger.log(`📢 Broadcast message published: ${message}`);
+            return true;
+        } catch (error) {
+            this.logger.error('Failed to publish broadcast:', error);
+            return false;
+        }
+    }
 }

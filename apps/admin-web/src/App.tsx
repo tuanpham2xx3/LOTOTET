@@ -101,6 +101,9 @@ export default function App() {
     const [isConnected, setIsConnected] = useState(false);
     const [chartPeriod, setChartPeriod] = useState<'day' | 'week' | 'month' | 'all'>('day');
     const [periodStats, setPeriodStats] = useState<Array<{ label: string; connections: number; roomsCreated: number; gamesPlayed: number }>>([]);
+    const [broadcastMessage, setBroadcastMessage] = useState('');
+    const [isBroadcasting, setIsBroadcasting] = useState(false);
+    const [broadcastStatus, setBroadcastStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     // Connect to socket on mount
     useEffect(() => {
@@ -175,6 +178,47 @@ export default function App() {
             fetchStatsByPeriod(chartPeriod);
         }
     }, [chartPeriod, isLoggedIn, socket, fetchStatsByPeriod]);
+
+    // Export CSV handler
+    const handleExportCSV = useCallback(() => {
+        if (!periodStats.length) return;
+
+        const headers = ['Thời gian', 'Lượt truy cập', 'Phòng tạo', 'Games chơi'];
+        const rows = periodStats.map(row => [row.label, row.connections, row.roomsCreated, row.gamesPlayed]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `lototet_stats_${chartPeriod}_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }, [periodStats, chartPeriod]);
+
+    // Broadcast message handler
+    const handleBroadcast = useCallback(() => {
+        if (!socket || !broadcastMessage.trim()) return;
+
+        setIsBroadcasting(true);
+        setBroadcastStatus(null);
+
+        socket.emit('admin:broadcast', { message: broadcastMessage.trim() }, (response: { success: boolean; error?: string }) => {
+            setIsBroadcasting(false);
+            if (response.success) {
+                setBroadcastStatus({ type: 'success', message: 'Đã gửi thông báo thành công!' });
+                setBroadcastMessage('');
+                // Auto-hide status after 3s
+                setTimeout(() => setBroadcastStatus(null), 3000);
+            } else {
+                setBroadcastStatus({ type: 'error', message: response.error || 'Gửi thất bại' });
+            }
+        });
+    }, [socket, broadcastMessage]);
 
     // Login Page
     if (!isLoggedIn) {
@@ -372,6 +416,13 @@ export default function App() {
                             Tất cả
                         </button>
                     </div>
+                    <button
+                        className="export-btn"
+                        onClick={handleExportCSV}
+                        disabled={periodStats.length === 0}
+                    >
+                        📥 Export CSV
+                    </button>
                 </div>
                 <div className="chart-container">
                     {periodStats.length > 0 ? (
@@ -421,6 +472,34 @@ export default function App() {
                         <div className="loading">Đang tải dữ liệu...</div>
                     )}
                 </div>
+            </div>
+
+            {/* Broadcast Message */}
+            <div className="panel broadcast-panel">
+                <h2>📢 Gửi thông báo</h2>
+                <div className="broadcast-form">
+                    <input
+                        type="text"
+                        placeholder="Nhập nội dung thông báo..."
+                        value={broadcastMessage}
+                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleBroadcast()}
+                        maxLength={200}
+                    />
+                    <button
+                        className="broadcast-btn"
+                        onClick={handleBroadcast}
+                        disabled={isBroadcasting || !broadcastMessage.trim()}
+                    >
+                        {isBroadcasting ? 'Đang gửi...' : 'Gửi'}
+                    </button>
+                </div>
+                {broadcastStatus && (
+                    <div className={`broadcast-status ${broadcastStatus.type}`}>
+                        {broadcastStatus.message}
+                    </div>
+                )}
+                <p className="broadcast-hint">Thông báo sẽ hiển thị trên tất cả màn hình người chơi</p>
             </div>
         </div>
     );

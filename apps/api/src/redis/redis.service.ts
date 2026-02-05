@@ -687,4 +687,52 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             return [];
         }
     }
+
+    // ==========================================
+    // Broadcast Subscription (from Admin)
+    // ==========================================
+
+    /**
+     * Subscribe to broadcast messages from admin
+     * @param callback - Function to call when broadcast message is received
+     */
+    subscribeBroadcast(callback: (message: string) => void): void {
+        this.logger.log('📢 Setting up broadcast subscription...');
+
+        // Create a separate client for subscription (pub/sub requires dedicated connection)
+        const subscriber = new Redis({
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379'),
+            password: process.env.REDIS_PASSWORD,
+            db: parseInt(process.env.REDIS_DB || '0'),
+        });
+
+        const channel = `${this.keyPrefix}broadcast`;
+
+        subscriber.on('error', (err) => {
+            this.logger.error('Broadcast subscriber error:', err);
+        });
+
+        subscriber.subscribe(channel, (err) => {
+            if (err) {
+                this.logger.error('Failed to subscribe to broadcast channel:', err);
+            } else {
+                this.logger.log(`📢 Subscribed to broadcast channel: ${channel}`);
+            }
+        });
+
+        subscriber.on('message', (ch, data) => {
+            if (ch === channel) {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.message) {
+                        this.logger.log(`📢 Received broadcast: ${parsed.message}`);
+                        callback(parsed.message);
+                    }
+                } catch (error) {
+                    this.logger.error('Failed to parse broadcast message:', error);
+                }
+            }
+        });
+    }
 }

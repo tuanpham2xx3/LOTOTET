@@ -149,6 +149,33 @@ export class AdminGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return { success: true };
     }
 
+    /**
+     * Broadcast message to all game clients
+     */
+    @SubscribeMessage('admin:broadcast')
+    async handleBroadcast(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: { message: string },
+    ) {
+        if (!this.authService.isAuthenticated(client.id)) {
+            return { success: false, error: 'Chưa đăng nhập' };
+        }
+
+        if (!payload.message || typeof payload.message !== 'string' || !payload.message.trim()) {
+            return { success: false, error: 'Nội dung thông báo không hợp lệ' };
+        }
+
+        const message = payload.message.trim().substring(0, 200);
+        const success = await this.statsService.publishBroadcast(message);
+
+        if (success) {
+            this.logger.log(`📢 Admin ${client.id} sent broadcast: ${message}`);
+            return { success: true };
+        }
+
+        return { success: false, error: 'Không thể gửi thông báo. Vui lòng thử lại.' };
+    }
+
     private stopStatsStream(socketId: string) {
         const interval = this.statsIntervals.get(socketId);
         if (interval) {

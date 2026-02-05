@@ -7,6 +7,11 @@ interface CurrentTurn {
     number: number;
 }
 
+interface Notification {
+    message: string;
+    timestamp: number;
+}
+
 interface GameStore {
     // Connection state
     socket: TypedSocket | null;
@@ -20,6 +25,9 @@ interface GameStore {
     currentTurn: CurrentTurn | null;
     pendingPlayerIds: string[];
 
+    // Notification from admin
+    notification: Notification | null;
+
     // Actions
     connect: () => void;
     disconnect: () => void;
@@ -27,6 +35,7 @@ interface GameStore {
     setMyPlayerId: (playerId: string) => void;
     setCurrentTurn: (turn: CurrentTurn) => void;
     setPendingPlayers: (ids: string[]) => void;
+    clearNotification: () => void;
     reset: () => void;
 }
 
@@ -38,6 +47,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     myPlayerId: null,
     currentTurn: null,
     pendingPlayerIds: [],
+    notification: null,
 
     // Actions
     connect: () => {
@@ -95,6 +105,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
             console.error('[Socket Error]', error);
         });
 
+        // Admin broadcast notification
+        socket.on('notification', (payload) => {
+            set({ notification: payload });
+        });
+
         set({ socket });
     },
 
@@ -107,6 +122,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             myPlayerId: null,
             currentTurn: null,
             pendingPlayerIds: [],
+            notification: null,
         });
     },
 
@@ -114,6 +130,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     setMyPlayerId: (playerId) => set({ myPlayerId: playerId }),
     setCurrentTurn: (turn) => set({ currentTurn: turn }),
     setPendingPlayers: (ids) => set({ pendingPlayerIds: ids }),
+    clearNotification: () => set({ notification: null }),
 
     reset: () =>
         set({
@@ -155,6 +172,9 @@ export const useWaitingBoard = (): WaitingState[] =>
 
 export const useDrawnNumbers = (): number[] =>
     useGameStore((state) => state.roomState?.game?.drawnNumbers ?? []);
+
+export const useNotification = () => useGameStore((state) => state.notification);
+export const useClearNotification = () => useGameStore((state) => state.clearNotification);
 
 export const useChatMessages = (): ChatMessage[] =>
     useGameStore((state) => state.roomState?.messages ?? []);

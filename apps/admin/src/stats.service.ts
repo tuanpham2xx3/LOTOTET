@@ -113,4 +113,11 @@ export class StatsService {
             this.previousServerStates.set(server.serverId, server.isOnline);
         }
     }
+
+    /**
+     * Publish broadcast message to game servers
+     */
+    async publishBroadcast(message: string): Promise<boolean> {
+        return this.redis.publishBroadcast(message);
+    }
 }

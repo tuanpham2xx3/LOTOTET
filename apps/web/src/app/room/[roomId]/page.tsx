@@ -10,10 +10,13 @@ import {
     useIsHost,
     useCurrentTurn,
     useConnected,
+    useNotification,
+    useClearNotification,
 } from '@/stores/gameStore';
 import { LobbyView, PlayingView, EndedView, GameMenu, PendingRequestsFloat } from '@/components/Room';
 import { ChatBox } from '@/components/Chat';
 import { formatNumber, formatBalance } from '@/lib/utils';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
 
 // Component hiển thị form join phòng hoặc trạng thái chờ duyệt
 function JoinRoomForm({
@@ -373,6 +376,8 @@ export default function RoomPage() {
     const myPlayer = useMyPlayer();
     const isHost = useIsHost();
     const currentTurn = useCurrentTurn();
+    const notification = useNotification();
+    const clearNotification = useClearNotification();
     const [pendingPlayerIds, setPendingPlayerIds] = useState<string[]>([]);
     const [menuOpen, setMenuOpen] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -662,6 +667,14 @@ export default function RoomPage() {
 
     return (
         <main className="min-h-screen">
+            {/* Admin Broadcast Notification */}
+            {notification && (
+                <AnnouncementBanner
+                    message={notification.message}
+                    onComplete={clearNotification}
+                />
+            )}
+
             {/* Copy Notification Toast */}
             {copyNotification && (
                 <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fadeIn">

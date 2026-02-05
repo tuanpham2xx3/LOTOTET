@@ -86,6 +86,9 @@ export interface ServerToClientEvents {
 
   // Chat
   'chat:message': (message: ChatMessage) => void;
+
+  // Admin broadcast notification
+  notification: (payload: { message: string; timestamp: number }) => void;
 }
 
 // Socket data (attached to each socket connection)

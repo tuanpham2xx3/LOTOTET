@@ -108,6 +108,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
         // Start heartbeat
         this.startHeartbeat();
+        // Subscribe to admin broadcast
+        this.subscribeToBroadcast();
+    }
+
+    private subscribeToBroadcast() {
+        this.redis.subscribeBroadcast((message: string) => {
+            this.logger.log(`📢 Broadcasting notification to all clients: ${message}`);
+            // Emit to ALL connected clients (not just those in rooms)
+            this.server.emit('notification', { message, timestamp: Date.now() });
+        });
     }
 
     private startHeartbeat() {
