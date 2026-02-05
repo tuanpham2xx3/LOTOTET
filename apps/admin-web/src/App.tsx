@@ -99,6 +99,8 @@ export default function App() {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [chartPeriod, setChartPeriod] = useState<'day' | 'week' | 'month' | 'all'>('day');
+    const [periodStats, setPeriodStats] = useState<Array<{ label: string; connections: number; roomsCreated: number; gamesPlayed: number }>>([]);
 
     // Connect to socket on mount
     useEffect(() => {
@@ -158,6 +160,23 @@ export default function App() {
         setStats(null);
         setPassword('');
     }, [socket]);
+
+    // Fetch stats by period
+    const fetchStatsByPeriod = useCallback((period: 'day' | 'week' | 'month' | 'all') => {
+        if (!socket) return;
+        socket.emit('admin:getStatsByPeriod', { period }, (response: { success: boolean; stats?: typeof periodStats }) => {
+            if (response.success && response.stats) {
+                setPeriodStats(response.stats);
+            }
+        });
+    }, [socket]);
+
+    // Fetch period stats when period changes
+    useEffect(() => {
+        if (isLoggedIn && socket) {
+            fetchStatsByPeriod(chartPeriod);
+        }
+    }, [chartPeriod, isLoggedIn, socket, fetchStatsByPeriod]);
 
     // Login Page
     if (!isLoggedIn) {
@@ -267,6 +286,7 @@ export default function App() {
                                                     <div className="mini-bar cpu" style={{ width: `${server.systemStats.cpu.usage}%` }} />
                                                 </div>
                                                 <span className="mini-value">{server.systemStats.cpu.usage.toFixed(1)}%</span>
+                                                <span className="mini-info">{server.systemStats.cpu.cores} cores</span>
                                             </div>
                                             <div className="mini-stat">
                                                 <span className="mini-label">💾 RAM</span>
@@ -274,6 +294,7 @@ export default function App() {
                                                     <div className="mini-bar ram" style={{ width: `${server.systemStats.memory.usagePercent}%` }} />
                                                 </div>
                                                 <span className="mini-value">{server.systemStats.memory.usagePercent.toFixed(1)}%</span>
+                                                <span className="mini-info">{formatBytes(server.systemStats.memory.used)} / {formatBytes(server.systemStats.memory.total)}</span>
                                             </div>
                                             <div className="mini-stat">
                                                 <span className="mini-label">💿 Disk</span>
@@ -281,6 +302,7 @@ export default function App() {
                                                     <div className="mini-bar disk" style={{ width: `${server.systemStats.disk.usagePercent}%` }} />
                                                 </div>
                                                 <span className="mini-value">{server.systemStats.disk.usagePercent.toFixed(1)}%</span>
+                                                <span className="mini-info">{formatBytes(server.systemStats.disk.used)} / {formatBytes(server.systemStats.disk.total)}</span>
                                             </div>
                                             <div className="mini-stat">
                                                 <span className="mini-label">⏱️ Up</span>
@@ -322,74 +344,45 @@ export default function App() {
                 </div>
             </div>
 
-            {/* System Stats Panel */}
-            <div className="panel">
-                <h2>⚙️ Tài nguyên hệ thống</h2>
-                <div className="system-stats-grid">
-                    <div className="system-stat-item">
-                        <div className="system-stat-header">
-                            <span className="system-stat-label">🖥️ CPU</span>
-                            <span className="system-stat-value">{stats?.systemStats?.cpu.usage.toFixed(1) || 0}%</span>
-                        </div>
-                        <div className="progress-bar">
-                            <div
-                                className="progress-fill cpu"
-                                style={{ width: `${stats?.systemStats?.cpu.usage || 0}%` }}
-                            />
-                        </div>
-                        <div className="system-stat-info">{stats?.systemStats?.cpu.cores || 0} cores</div>
-                    </div>
-                    <div className="system-stat-item">
-                        <div className="system-stat-header">
-                            <span className="system-stat-label">💾 RAM</span>
-                            <span className="system-stat-value">{stats?.systemStats?.memory.usagePercent.toFixed(1) || 0}%</span>
-                        </div>
-                        <div className="progress-bar">
-                            <div
-                                className="progress-fill memory"
-                                style={{ width: `${stats?.systemStats?.memory.usagePercent || 0}%` }}
-                            />
-                        </div>
-                        <div className="system-stat-info">
-                            {formatBytes(stats?.systemStats?.memory.used || 0)} / {formatBytes(stats?.systemStats?.memory.total || 0)}
-                        </div>
-                    </div>
-                    <div className="system-stat-item">
-                        <div className="system-stat-header">
-                            <span className="system-stat-label">💿 Disk</span>
-                            <span className="system-stat-value">{stats?.systemStats?.disk.usagePercent.toFixed(1) || 0}%</span>
-                        </div>
-                        <div className="progress-bar">
-                            <div
-                                className="progress-fill disk"
-                                style={{ width: `${stats?.systemStats?.disk.usagePercent || 0}%` }}
-                            />
-                        </div>
-                        <div className="system-stat-info">
-                            {formatBytes(stats?.systemStats?.disk.used || 0)} / {formatBytes(stats?.systemStats?.disk.total || 0)}
-                        </div>
-                    </div>
-                    <div className="system-stat-item">
-                        <div className="system-stat-header">
-                            <span className="system-stat-label">⏱️ Uptime</span>
-                            <span className="system-stat-value">{formatUptime(stats?.systemStats?.uptime || 0)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Chart */}
             <div className="panel">
-                <h2>📊 Thống kê 7 ngày gần nhất</h2>
+                <div className="chart-header">
+                    <h2>📊 Thống kê</h2>
+                    <div className="period-tabs">
+                        <button
+                            className={`period-tab ${chartPeriod === 'day' ? 'active' : ''}`}
+                            onClick={() => setChartPeriod('day')}
+                        >
+                            Ngày
+                        </button>
+                        <button
+                            className={`period-tab ${chartPeriod === 'week' ? 'active' : ''}`}
+                            onClick={() => setChartPeriod('week')}
+                        >
+                            Tuần
+                        </button>
+                        <button
+                            className={`period-tab ${chartPeriod === 'month' ? 'active' : ''}`}
+                            onClick={() => setChartPeriod('month')}
+                        >
+                            Tháng
+                        </button>
+                        <button
+                            className={`period-tab ${chartPeriod === 'all' ? 'active' : ''}`}
+                            onClick={() => setChartPeriod('all')}
+                        >
+                            Tất cả
+                        </button>
+                    </div>
+                </div>
                 <div className="chart-container">
-                    {stats?.last7Days ? (
+                    {periodStats.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={stats.last7Days}>
+                            <LineChart data={periodStats}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                                 <XAxis
-                                    dataKey="date"
+                                    dataKey="label"
                                     stroke="rgba(255,255,255,0.5)"
-                                    tickFormatter={(value) => value.split('-').slice(1).join('/')}
                                 />
                                 <YAxis stroke="rgba(255,255,255,0.5)" />
                                 <Tooltip

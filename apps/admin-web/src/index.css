@@ -495,3 +495,51 @@ body {
 .mini-value.uptime {
     color: #a855f7;
 }
+
+.mini-info {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: -2px;
+}
+
+/* Chart header with period tabs */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.chart-header h2 {
+    margin: 0;
+}
+
+.period-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 8px;
+}
+
+.period-tab {
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.period-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.period-tab.active {
+    background: linear-gradient(135deg, #ffd700, #ff9800);
+    color: #000;
+    font-weight: 600;
+}

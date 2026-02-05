@@ -123,6 +123,22 @@ export class AdminGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     /**
+     * Get stats by period
+     */
+    @SubscribeMessage('admin:getStatsByPeriod')
+    async handleGetStatsByPeriod(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: { period: 'day' | 'week' | 'month' | 'all' },
+    ) {
+        if (!this.authService.isAuthenticated(client.id)) {
+            return { success: false, error: 'Chưa đăng nhập' };
+        }
+
+        const stats = await this.statsService.getStatsByPeriod(payload.period);
+        return { success: true, stats };
+    }
+
+    /**
      * Logout
      */
     @SubscribeMessage('admin:logout')

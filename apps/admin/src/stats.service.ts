@@ -67,6 +67,13 @@ export class StatsService {
         return { overview, servers, rooms, last7Days, systemStats };
     }
 
+    /**
+     * Get stats by period: day, week, month, all
+     */
+    async getStatsByPeriod(period: 'day' | 'week' | 'month' | 'all') {
+        return this.redis.getStatsByPeriod(period);
+    }
+
     async getOverviewStats(): Promise<OverviewStats> {
         const [baseStats, servers] = await Promise.all([
             this.redis.getOverviewStats(),

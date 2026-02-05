@@ -242,4 +242,100 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
         return stats;
     }
+
+    /**
+     * Get stats for different periods: day (7 days), week (4 weeks), month (12 months), all
+     */
+    async getStatsByPeriod(period: 'day' | 'week' | 'month' | 'all'): Promise<Array<{
+        label: string;
+        connections: number;
+        roomsCreated: number;
+        gamesPlayed: number;
+    }>> {
+        const stats: Array<{
+            label: string;
+            connections: number;
+            roomsCreated: number;
+            gamesPlayed: number;
+        }> = [];
+
+        try {
+            if (period === 'day') {
+                // Last 7 days
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateKey = date.toISOString().split('T')[0];
+                    const dayStats = await this.getDailyStats(dateKey);
+                    stats.push({
+                        label: dateKey.split('-').slice(1).join('/'),
+                        ...dayStats,
+                    });
+                }
+            } else if (period === 'week') {
+                // Last 4 weeks
+                for (let w = 3; w >= 0; w--) {
+                    let weekConnections = 0;
+                    let weekRooms = 0;
+                    let weekGames = 0;
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - (w * 7) - 6);
+
+                    for (let d = 0; d < 7; d++) {
+                        const date = new Date(weekStart);
+                        date.setDate(date.getDate() + d);
+                        const dateKey = date.toISOString().split('T')[0];
+                        const dayStats = await this.getDailyStats(dateKey);
+                        weekConnections += dayStats.connections;
+                        weekRooms += dayStats.roomsCreated;
+                        weekGames += dayStats.gamesPlayed;
+                    }
+
+                    stats.push({
+                        label: `Tuần ${4 - w}`,
+                        connections: weekConnections,
+                        roomsCreated: weekRooms,
+                        gamesPlayed: weekGames,
+                    });
+                }
+            } else if (period === 'month') {
+                // Last 12 months
+                for (let m = 11; m >= 0; m--) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - m);
+                    const monthKey = date.toISOString().slice(0, 7);
+                    const monthStats = await this.getMonthlyStats(monthKey);
+                    const monthLabel = date.toLocaleDateString('vi-VN', { month: 'short' });
+                    stats.push({
+                        label: monthLabel,
+                        ...monthStats,
+                    });
+                }
+            } else {
+                // All time - aggregate by month for last 12 months
+                return this.getStatsByPeriod('month');
+            }
+        } catch (error) {
+            this.logger.error(`Failed to get stats by period ${period}:`, error);
+        }
+
+        return stats;
+    }
+
+    private async getMonthlyStats(monthKey: string): Promise<{
+        connections: number;
+        roomsCreated: number;
+        gamesPlayed: number;
+    }> {
+        try {
+            const stats = await this.client.hgetall(`${this.keyPrefix}stats:monthly:${monthKey}`);
+            return {
+                connections: parseInt(stats.connections || '0'),
+                roomsCreated: parseInt(stats.rooms_created || '0'),
+                gamesPlayed: parseInt(stats.games_played || '0'),
+            };
+        } catch {
+            return { connections: 0, roomsCreated: 0, gamesPlayed: 0 };
+        }
+    }
 }
