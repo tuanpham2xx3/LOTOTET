@@ -11,7 +11,7 @@ export default function BackgroundMusic() {
         const handleUserInteraction = () => {
             if (!hasInteracted && audioRef.current) {
                 setHasInteracted(true);
-                audioRef.current.volume = 0.3; // 30% volume
+                audioRef.current.volume = 0.1; // 10% volume
                 audioRef.current.play().then(() => {
                     setIsPlaying(true);
                 }).catch((err) => {
