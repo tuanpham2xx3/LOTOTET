@@ -4,6 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
 import compression from 'compression';
+import helmet from 'helmet';
 import { LoggingInterceptor } from './common/logging.interceptor';
 
 const logger = new Logger('Bootstrap');
@@ -32,6 +33,12 @@ function isAllowedOrigin(origin: string | undefined): boolean {
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+    // Enable security headers (Helmet)
+    app.use(helmet({
+        contentSecurityPolicy: false, // Disable CSP for flexibility with frontend
+        crossOriginEmbedderPolicy: false, // Allow embedding for game assets
+    }));
 
     // Enable response compression (gzip)
     app.use(compression());
@@ -63,6 +70,7 @@ async function bootstrap() {
     const port = process.env.PORT || 3010;
     await app.listen(port);
     logger.log(`🚀 LOTOTET Backend running on http://localhost:${port}`);
+    logger.log(`🛡️ Security headers (Helmet): enabled`);
     logger.log(`📦 Response compression: enabled`);
     logger.log(`📝 Request logging: enabled`);
 }
