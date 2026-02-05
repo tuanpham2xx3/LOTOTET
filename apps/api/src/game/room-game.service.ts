@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RoomManager } from './room.manager';
 import {
     RoomState,
@@ -15,6 +15,8 @@ export type ServiceResult<T> =
 
 @Injectable()
 export class RoomGameService {
+    private readonly logger = new Logger(RoomGameService.name);
+
     constructor(private roomManager: RoomManager) { }
 
     /**
@@ -56,7 +58,7 @@ export class RoomGameService {
 
         // Validate all players have enough balance for bet
         const betAmount = room.betAmount || 0;
-        console.log(`[Game] Starting game. room.betAmount = ${room.betAmount}, betAmount = ${betAmount}`);
+        this.logger.log(`Starting game. room.betAmount = ${room.betAmount}, betAmount = ${betAmount}`);
 
         // Save initial balances for leaderboard
         room.initialBalances = {};
@@ -78,7 +80,7 @@ export class RoomGameService {
             }
             // Deduct bet from all players
             for (const player of room.players) {
-                console.log(`[Game] Deducting ${betAmount} from ${player.name}: ${player.balance} -> ${player.balance - betAmount}`);
+                this.logger.debug(`Deducting ${betAmount} from ${player.name}: ${player.balance} -> ${player.balance - betAmount}`);
                 player.balance -= betAmount;
             }
         }
@@ -484,8 +486,8 @@ export class RoomGameService {
         // Calculate prize and award to winner
         const betAmount = room.betAmount || 0;
         const prize = betAmount * room.players.length;
-        console.log(`[Game] ${player.name} wins! Prize: ${prize} = ${betAmount} x ${room.players.length} players`);
-        console.log(`[Game] ${player.name} balance: ${player.balance} -> ${player.balance + prize}`);
+        this.logger.log(`${player.name} wins! Prize: ${prize} = ${betAmount} x ${room.players.length} players`);
+        this.logger.debug(`${player.name} balance: ${player.balance} -> ${player.balance + prize}`);
         player.balance += prize;
 
         // Game ends
@@ -606,7 +608,7 @@ export class RoomGameService {
 
         // Mark player as forfeited
         player.forfeited = true;
-        console.log(`[Game] ${player.name} forfeited in room ${roomId}`);
+        this.logger.log(`${player.name} forfeited in room ${roomId}`);
 
         // Remove player from room
         room.players = room.players.filter((p) => p.id !== player.id);
@@ -623,7 +625,7 @@ export class RoomGameService {
             const totalPlayers = room.players.length + 1; // +1 for the player we just removed
             const prize = betAmount * totalPlayers;
 
-            console.log(`[Game] Auto-win: ${winner.name} wins! Prize: ${prize}`);
+            this.logger.log(`Auto-win: ${winner.name} wins! Prize: ${prize}`);
             winner.balance += prize;
 
             room.phase = RoomPhase.ENDED;
@@ -671,13 +673,13 @@ export class RoomGameService {
             };
         }
 
-        console.log(`[Game] Host cancelled game in room ${roomId}`);
+        this.logger.log(`Host cancelled game in room ${roomId}`);
 
         // Restore initial balances for all players
         if (room.initialBalances) {
             for (const player of room.players) {
                 if (room.initialBalances[player.id] !== undefined) {
-                    console.log(`[Game] Restoring ${player.name} balance: ${player.balance} -> ${room.initialBalances[player.id]}`);
+                    this.logger.debug(`Restoring ${player.name} balance: ${player.balance} -> ${room.initialBalances[player.id]}`);
                     player.balance = room.initialBalances[player.id];
                 }
             }

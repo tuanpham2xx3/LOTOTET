@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 
 /**
@@ -5,6 +6,7 @@ import { RedisService } from '../redis/redis.service';
  * Falls back to in-memory Map if Redis unavailable
  */
 export class WsRateLimiter {
+    private readonly logger = new Logger(WsRateLimiter.name);
     // In-memory fallback when Redis is unavailable
     private readonly memoryRequests = new Map<string, number[]>();
 
@@ -25,7 +27,7 @@ export class WsRateLimiter {
             const result = await this.redis.checkRateLimit(ip, eventName, limit, windowSeconds);
 
             if (!result.allowed) {
-                console.log(`[RateLimiter] BLOCKED ${ip}:${eventName}: ${result.count}/${limit} (Redis)`);
+                this.logger.warn(`BLOCKED ${ip}:${eventName}: ${result.count}/${limit} (Redis)`);
             }
 
             return result.allowed;
@@ -50,7 +52,7 @@ export class WsRateLimiter {
 
         // Check limit
         if (timestamps.length >= limit) {
-            console.log(`[RateLimiter] BLOCKED ${key}: ${timestamps.length}/${limit} in ${windowMs}ms (Memory)`);
+            this.logger.warn(`BLOCKED ${key}: ${timestamps.length}/${limit} in ${windowMs}ms (Memory)`);
             return false;
         }
 

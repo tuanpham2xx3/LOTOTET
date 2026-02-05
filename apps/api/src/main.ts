@@ -2,6 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { Logger } from '@nestjs/common';
+
+const logger = new Logger('Bootstrap');
 
 /**
  * Check if origin is allowed
@@ -34,7 +37,7 @@ async function bootstrap() {
             if (isAllowedOrigin(origin)) {
                 callback(null, true);
             } else {
-                console.warn(`[CORS] Blocked origin: ${origin}`);
+                logger.warn(`[CORS] Blocked origin: ${origin}`);
                 callback(null, false);
             }
         },
@@ -51,7 +54,6 @@ async function bootstrap() {
 
     const port = process.env.PORT || 3010;
     await app.listen(port);
-    console.log(`🚀 LOTOTET Backend running on http://localhost:${port}`);
+    logger.log(`🚀 LOTOTET Backend running on http://localhost:${port}`);
 }
 bootstrap();
-

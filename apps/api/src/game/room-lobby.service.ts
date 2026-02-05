@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RoomManager } from './room.manager';
 import {
     RoomState,
@@ -18,6 +18,8 @@ export type ServiceResult<T> =
 
 @Injectable()
 export class RoomLobbyService {
+    private readonly logger = new Logger(RoomLobbyService.name);
+
     constructor(private roomManager: RoomManager) { }
 
     /**
@@ -245,10 +247,10 @@ export class RoomLobbyService {
             };
         }
 
-        console.log(`[Lobby] Setting betAmount: ${room.betAmount} -> ${amount}`);
+        this.logger.debug(`Setting betAmount: ${room.betAmount} -> ${amount}`);
         room.betAmount = amount;
         await this.roomManager.update(roomId, room);
-        console.log(`[Lobby] betAmount set successfully: ${room.betAmount}`);
+        this.logger.debug(`betAmount set successfully: ${room.betAmount}`);
 
         return { success: true, data: undefined };
     }
@@ -446,12 +448,12 @@ export class RoomLobbyService {
         const player = room.players.find((p) => p.socketId === socketId);
         if (player) {
             // DON'T remove player from room - they can reconnect
-            console.log(`[RoomLobbyService] Player ${player.id} (host: ${player.isHost}) disconnected, keeping in room for reconnection`);
+            this.logger.log(`Player ${player.id} (host: ${player.isHost}) disconnected, keeping in room for reconnection`);
 
             // If host disconnected, track the timestamp for cleanup
             if (player.isHost) {
                 await this.roomManager.setHostDisconnected(roomId);
-                console.log(`[RoomLobbyService] Host disconnected - room ${roomId} will be deleted in 10 minutes if host doesn't reconnect`);
+                this.logger.warn(`Host disconnected - room ${roomId} will be deleted in 10 minutes if host doesn't reconnect`);
             }
         }
 
@@ -511,10 +513,10 @@ export class RoomLobbyService {
         // If host reconnected, clear the disconnect timestamp
         if (player.isHost) {
             await this.roomManager.clearHostDisconnected(roomId);
-            console.log(`[RoomLobbyService] Host reconnected to room ${roomId}`);
+            this.logger.log(`Host reconnected to room ${roomId}`);
         }
 
-        console.log(`[RoomLobbyService] Player ${playerId} reconnected to room ${roomId}`);
+        this.logger.log(`Player ${playerId} reconnected to room ${roomId}`);
 
         return { success: true, data: { player } };
     }

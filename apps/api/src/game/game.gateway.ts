@@ -7,6 +7,7 @@ import {
     OnGatewayConnection,
     OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RoomService } from './room.service';
 import { RoomChatService } from './room-chat.service';
@@ -63,7 +64,9 @@ function isAllowedOrigin(origin: string | undefined): boolean {
             if (isAllowedOrigin(origin)) {
                 callback(null, true);
             } else {
-                console.warn(`[WebSocket] Blocked origin: ${origin}`);
+                // Use static logger for decorator context
+                const logger = new Logger('WebSocket');
+                logger.warn(`Blocked origin: ${origin}`);
                 callback(null, false);
             }
         },
@@ -71,6 +74,8 @@ function isAllowedOrigin(origin: string | undefined): boolean {
     },
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
+    private readonly logger = new Logger(GameGateway.name);
+
     @WebSocketServer()
     server!: TypedServer;
 
@@ -117,14 +122,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // ==================== Connection Lifecycle ====================
 
     async handleConnection(client: TypedSocket) {
-        console.log(`[Gateway] Client connected: ${client.id}`);
+        this.logger.log(`Client connected: ${client.id}`);
         this.connectionCount++;
         await this.redis.incrementTotalConnections();
         await this.redis.setServerConnections(this.serverId, this.connectionCount);
     }
 
     async handleDisconnect(client: TypedSocket) {
-        console.log(`[Gateway] Client disconnected: ${client.id}`);
+        this.logger.log(`Client disconnected: ${client.id}`);
         this.connectionCount = Math.max(0, this.connectionCount - 1);
         await this.redis.setServerConnections(this.serverId, this.connectionCount);
 
@@ -147,7 +152,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang tạo phòng quá nhanh. Vui lòng đợi.');
         }
 
-        console.log(`[Gateway] room:create from ${client.id}`, payload);
+        this.logger.debug(`room:create from ${client.id}`, payload);
 
         // Parse payload (optional name and balance)
         let hostName = 'Host';
@@ -189,7 +194,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return { success: false, error: { code: ErrorCode.VALIDATION_ERROR, message: 'Bạn đang gửi request quá nhanh. Vui lòng đợi.' } };
         }
 
-        console.log(`[Gateway] room:join from ${client.id}`, payload);
+        this.logger.debug(`room:join from ${client.id}`, payload);
 
         // Validate payload
         const parsed = JoinRoomSchema.safeParse(payload);
@@ -224,7 +229,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] room:approveJoin from ${client.id}`, payload);
+        this.logger.debug(`room:approveJoin from ${client.id}`, payload);
 
         const parsed = ApproveJoinSchema.safeParse(payload);
         if (!parsed.success) {
@@ -258,7 +263,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] room:rejectJoin from ${client.id}`, payload);
+        this.logger.debug(`room:rejectJoin from ${client.id}`, payload);
 
         const parsed = RejectJoinSchema.safeParse(payload);
         if (!parsed.success) {
@@ -296,7 +301,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] room:updateBalance from ${client.id}`, payload);
+        this.logger.debug(`room:updateBalance from ${client.id}`, payload);
 
         const parsed = UpdateBalanceSchema.safeParse(payload);
         if (!parsed.success) {
@@ -327,7 +332,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] room:kickPlayer from ${client.id}`, payload);
+        this.logger.debug(`room:kickPlayer from ${client.id}`, payload);
 
         // Validate payload
         if (!payload || typeof payload !== 'object' || !('playerId' in payload)) {
@@ -376,7 +381,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @MessageBody() payload: unknown,
     ) {
         // No rate limit for reconnect
-        console.log(`[Gateway] room:reconnect from ${client.id}`, payload);
+        this.logger.debug(`room:reconnect from ${client.id}`, payload);
 
         const parsed = ReconnectSchema.safeParse(payload);
         if (!parsed.success) {
@@ -403,7 +408,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 client.emit('room:state', room);
             }
 
-            console.log(`[Gateway] Player ${playerId} reconnected to room ${roomId}`);
+            this.logger.log(`Player ${playerId} reconnected to room ${roomId}`);
             return { success: true };
         }
 
@@ -415,7 +420,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] room:setBetAmount from ${client.id}`, payload);
+        this.logger.debug(`room:setBetAmount from ${client.id}`, payload);
 
         const parsed = SetBetAmountSchema.safeParse(payload);
         if (!parsed.success) {
@@ -447,7 +452,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] room:spectate from ${client.id}`, payload);
+        this.logger.debug(`room:spectate from ${client.id}`, payload);
 
         const parsed = SpectateRoomSchema.safeParse(payload);
         if (!parsed.success) {
@@ -484,7 +489,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] spectator:requestJoin from ${client.id}`, payload);
+        this.logger.debug(`spectator:requestJoin from ${client.id}`, payload);
 
         const parsed = SpectatorRequestJoinSchema.safeParse(payload);
         if (!parsed.success) {
@@ -517,7 +522,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('ticket:reroll')
     async handleTicketReroll(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] ticket:reroll from ${client.id}`);
+        this.logger.debug(`ticket:reroll from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -535,7 +540,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('ticket:saveReady')
     async handleTicketSaveReady(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] ticket:saveReady from ${client.id}`);
+        this.logger.debug(`ticket:saveReady from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -555,7 +560,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('game:start')
     async handleGameStart(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] game:start from ${client.id}`);
+        this.logger.debug(`game:start from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -584,7 +589,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('turn:draw')
     async handleTurnDraw(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] turn:draw from ${client.id}`);
+        this.logger.debug(`turn:draw from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -611,7 +616,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] turn:mark from ${client.id}`, payload);
+        this.logger.debug(`turn:mark from ${client.id}`, payload);
 
         const parsed = MarkSchema.safeParse(payload);
         if (!parsed.success) {
@@ -659,7 +664,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] turn:markAny from ${client.id}`, payload);
+        this.logger.debug(`turn:markAny from ${client.id}`, payload);
 
         // Validate payload - only need row and col
         if (!payload || typeof payload !== 'object' || !('row' in payload) || !('col' in payload)) {
@@ -708,7 +713,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @ConnectedSocket() client: TypedSocket,
         @MessageBody() payload: unknown,
     ) {
-        console.log(`[Gateway] turn:noNumber from ${client.id}`, payload);
+        this.logger.debug(`turn:noNumber from ${client.id}`, payload);
 
         const parsed = NoNumberSchema.safeParse(payload);
         if (!parsed.success) {
@@ -748,7 +753,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang gửi request quá nhanh.');
         }
 
-        console.log(`[Gateway] game:bingoClaim from ${client.id}`);
+        this.logger.debug(`game:bingoClaim from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -777,7 +782,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('game:restart')
     async handleGameRestart(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] game:restart from ${client.id}`);
+        this.logger.debug(`game:restart from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -795,7 +800,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('game:forfeit')
     async handleForfeit(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] game:forfeit from ${client.id}`);
+        this.logger.debug(`game:forfeit from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -850,7 +855,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('game:cancel')
     async handleCancelGame(@ConnectedSocket() client: TypedSocket) {
-        console.log(`[Gateway] game:cancel from ${client.id}`);
+        this.logger.debug(`game:cancel from ${client.id}`);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -885,7 +890,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang gửi tin nhắn quá nhanh.');
         }
 
-        console.log(`[Gateway] chat:send from ${client.id}`, payload);
+        this.logger.debug(`chat:send from ${client.id}`, payload);
 
         const roomId = client.data.roomId;
         if (!roomId) {
@@ -942,7 +947,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }, this.DRAW_CHECK_DELAY_MS);
 
         this.pendingDrawChecks.set(roomId, timeout);
-        console.log(`[Gateway] scheduleDrawCheck: Scheduled draw check for room ${roomId} in ${this.DRAW_CHECK_DELAY_MS}ms`);
+        this.logger.debug(`scheduleDrawCheck: Scheduled draw check for room ${roomId} in ${this.DRAW_CHECK_DELAY_MS}ms`);
     }
 
     /**
@@ -950,30 +955,30 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
      */
     private async executeDrawCheck(roomId: string) {
         const room = await this.roomService.getRoom(roomId);
-        console.log(`[Gateway] executeDrawCheck: roomId=${roomId}, turnId=${room?.game?.turnId}, phase=${room?.phase}`);
+        this.logger.debug(`executeDrawCheck: roomId=${roomId}, turnId=${room?.game?.turnId}, phase=${room?.phase}`);
 
         if (!room?.game || room.game.turnId === 0) {
-            console.log(`[Gateway] executeDrawCheck: Skipping - no game or turnId is 0`);
+            this.logger.debug(`executeDrawCheck: Skipping - no game or turnId is 0`);
             return;
         }
 
         const pendingPlayerIds = this.roomService.getPendingPlayers(room);
-        console.log(`[Gateway] executeDrawCheck: pendingPlayerIds=${JSON.stringify(pendingPlayerIds)}, players=${JSON.stringify(room.players.map(p => ({ id: p.id, name: p.name, respondedTurnId: p.respondedTurnId })))}`);
+        this.logger.debug(`executeDrawCheck: pendingPlayerIds=${JSON.stringify(pendingPlayerIds)}, players=${JSON.stringify(room.players.map(p => ({ id: p.id, name: p.name, respondedTurnId: p.respondedTurnId })))}`);
 
         if (pendingPlayerIds.length === 0) {
-            console.log(`[Gateway] executeDrawCheck: All players responded, auto-drawing next number`);
+            this.logger.debug(`executeDrawCheck: All players responded, auto-drawing next number`);
 
             // Check if ALL players responded with NO_NUMBER
             const allNoNumber = room.players.every(p => room.game!.turnResponses[p.id] === 'NO_NUMBER');
 
             // Delay before drawing: 2s if all NO_NUMBER, 1s otherwise
             const delayMs = allNoNumber ? 2000 : 1000;
-            console.log(`[Gateway] executeDrawCheck: Waiting ${delayMs}ms before auto-draw (allNoNumber=${allNoNumber})`);
+            this.logger.debug(`executeDrawCheck: Waiting ${delayMs}ms before auto-draw (allNoNumber=${allNoNumber})`);
             await this.delay(delayMs);
 
             // All players responded, auto-draw next number
             const drawResult = await this.roomService.autoDrawNumber(roomId);
-            console.log(`[Gateway] executeDrawCheck: drawResult success=${drawResult.success}`);
+            this.logger.debug(`executeDrawCheck: drawResult success=${drawResult.success}`);
             if (drawResult.success) {
                 // Emit turn:new to all players
                 this.server.to(roomId).emit('turn:new', {
@@ -984,7 +989,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 await this.broadcastRoomState(roomId);
             }
         } else {
-            console.log(`[Gateway] executeDrawCheck: Still waiting for ${pendingPlayerIds.length} players`);
+            this.logger.debug(`executeDrawCheck: Still waiting for ${pendingPlayerIds.length} players`);
         }
     }
 
