@@ -7,6 +7,7 @@ import { RoomTicketService } from './room-ticket.service';
 import { RoomGameService } from './room-game.service';
 import { RoomChatService } from './room-chat.service';
 import { RoomCleanupService } from './room-cleanup.service';
+import { SystemStatsService } from './system-stats.service';
 import { UploadModule } from '../upload/upload.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { UploadModule } from '../upload/upload.module';
         RoomGameService,
         RoomChatService,
         RoomCleanupService,
+        SystemStatsService,
     ],
     exports: [RoomManager],
 })

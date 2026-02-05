@@ -118,6 +118,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         connections: number;
         lastHeartbeat: number;
         isOnline: boolean;
+        systemStats?: {
+            cpu: { usage: number; cores: number };
+            memory: { total: number; used: number; usagePercent: number };
+            disk: { total: number; used: number; usagePercent: number };
+            uptime: number;
+        };
     }>> {
         try {
             const serverIds = await this.client.smembers(`${this.keyPrefix}servers:active`);
@@ -126,22 +132,39 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
                 connections: number;
                 lastHeartbeat: number;
                 isOnline: boolean;
+                systemStats?: {
+                    cpu: { usage: number; cores: number };
+                    memory: { total: number; used: number; usagePercent: number };
+                    disk: { total: number; used: number; usagePercent: number };
+                    uptime: number;
+                };
             }> = [];
 
             for (const serverId of serverIds) {
-                const [connections, heartbeat] = await Promise.all([
+                const [connections, heartbeat, systemStatsStr] = await Promise.all([
                     this.client.get(`${this.keyPrefix}server:${serverId}:connections`),
                     this.client.get(`${this.keyPrefix}server:${serverId}:heartbeat`),
+                    this.client.get(`${this.keyPrefix}server:${serverId}:system_stats`),
                 ]);
 
                 const lastHeartbeat = parseInt(heartbeat || '0');
                 const isOnline = Date.now() - lastHeartbeat < 60000;
+
+                let systemStats;
+                if (systemStatsStr) {
+                    try {
+                        systemStats = JSON.parse(systemStatsStr);
+                    } catch {
+                        // Invalid JSON, ignore
+                    }
+                }
 
                 servers.push({
                     serverId,
                     connections: parseInt(connections || '0'),
                     lastHeartbeat,
                     isOnline,
+                    systemStats,
                 });
             }
 

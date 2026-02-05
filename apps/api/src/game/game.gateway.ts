@@ -30,6 +30,7 @@ import {
 import { WsRateLimiter, RATE_LIMITS } from './rate-limiter';
 import { RoomManager } from './room.manager';
 import { RedisService } from '../redis/redis.service';
+import { SystemStatsService } from './system-stats.service';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
@@ -87,6 +88,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         private chatService: RoomChatService,
         private roomManager: RoomManager,
         private redis: RedisService,
+        private systemStats: SystemStatsService,
     ) {
         // Initialize rate limiter with Redis
         this.rateLimiter = new WsRateLimiter(this.redis);
@@ -106,6 +108,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private startHeartbeat() {
         setInterval(async () => {
             await this.redis.updateServerHeartbeat(this.serverId);
+            // Report system stats alongside heartbeat
+            const stats = await this.systemStats.getSystemStats();
+            await this.redis.reportSystemStats(this.serverId, stats);
         }, 30000); // Every 30 seconds
     }
 

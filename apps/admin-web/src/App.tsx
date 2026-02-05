@@ -17,6 +17,12 @@ interface ServerInfo {
     connections: number;
     lastHeartbeat: number;
     isOnline: boolean;
+    systemStats?: {
+        cpu: { usage: number; cores: number };
+        memory: { total: number; used: number; usagePercent: number };
+        disk: { total: number; used: number; usagePercent: number };
+        uptime: number;
+    };
 }
 
 interface RoomInfo {
@@ -34,15 +40,56 @@ interface DailyStats {
     gamesPlayed: number;
 }
 
+interface SystemStats {
+    cpu: {
+        usage: number;
+        cores: number;
+    };
+    memory: {
+        total: number;
+        used: number;
+        free: number;
+        usagePercent: number;
+    };
+    disk: {
+        total: number;
+        used: number;
+        free: number;
+        usagePercent: number;
+    };
+    uptime: number;
+}
+
 interface DashboardStats {
     overview: OverviewStats;
     servers: ServerInfo[];
     rooms: RoomInfo[];
     last7Days: DailyStats[];
+    systemStats: SystemStats;
 }
 
 // Get API URL from environment or default
 const API_URL = import.meta.env.VITE_ADMIN_API_URL || 'http://localhost:4000';
+
+// Helper function to format bytes to human readable
+function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// Helper function to format uptime
+function formatUptime(seconds: number): string {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+}
 
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -202,14 +249,45 @@ export default function App() {
                     <div className="server-list">
                         {stats?.servers.length ? (
                             stats.servers.map((server) => (
-                                <div key={server.serverId} className="server-item">
-                                    <div className="server-info">
-                                        <span className={`server-status ${server.isOnline ? 'online' : 'offline'}`}></span>
-                                        <span>{server.serverId}</span>
+                                <div key={server.serverId} className="server-item-expanded">
+                                    <div className="server-header">
+                                        <div className="server-info">
+                                            <span className={`server-status ${server.isOnline ? 'online' : 'offline'}`}></span>
+                                            <span>{server.serverId}</span>
+                                        </div>
+                                        <div className="server-connections">
+                                            <strong>{server.connections}</strong> connections
+                                        </div>
                                     </div>
-                                    <div className="server-connections">
-                                        <strong>{server.connections}</strong> connections
-                                    </div>
+                                    {server.systemStats && (
+                                        <div className="server-system-stats">
+                                            <div className="mini-stat">
+                                                <span className="mini-label">🖥️ CPU</span>
+                                                <div className="mini-progress">
+                                                    <div className="mini-bar cpu" style={{ width: `${server.systemStats.cpu.usage}%` }} />
+                                                </div>
+                                                <span className="mini-value">{server.systemStats.cpu.usage.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="mini-stat">
+                                                <span className="mini-label">💾 RAM</span>
+                                                <div className="mini-progress">
+                                                    <div className="mini-bar ram" style={{ width: `${server.systemStats.memory.usagePercent}%` }} />
+                                                </div>
+                                                <span className="mini-value">{server.systemStats.memory.usagePercent.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="mini-stat">
+                                                <span className="mini-label">💿 Disk</span>
+                                                <div className="mini-progress">
+                                                    <div className="mini-bar disk" style={{ width: `${server.systemStats.disk.usagePercent}%` }} />
+                                                </div>
+                                                <span className="mini-value">{server.systemStats.disk.usagePercent.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="mini-stat">
+                                                <span className="mini-label">⏱️ Up</span>
+                                                <span className="mini-value uptime">{formatUptime(server.systemStats.uptime)}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         ) : (
@@ -240,6 +318,62 @@ export default function App() {
                         ) : (
                             <div className="empty-state">Không có phòng nào đang hoạt động</div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* System Stats Panel */}
+            <div className="panel">
+                <h2>⚙️ Tài nguyên hệ thống</h2>
+                <div className="system-stats-grid">
+                    <div className="system-stat-item">
+                        <div className="system-stat-header">
+                            <span className="system-stat-label">🖥️ CPU</span>
+                            <span className="system-stat-value">{stats?.systemStats?.cpu.usage.toFixed(1) || 0}%</span>
+                        </div>
+                        <div className="progress-bar">
+                            <div
+                                className="progress-fill cpu"
+                                style={{ width: `${stats?.systemStats?.cpu.usage || 0}%` }}
+                            />
+                        </div>
+                        <div className="system-stat-info">{stats?.systemStats?.cpu.cores || 0} cores</div>
+                    </div>
+                    <div className="system-stat-item">
+                        <div className="system-stat-header">
+                            <span className="system-stat-label">💾 RAM</span>
+                            <span className="system-stat-value">{stats?.systemStats?.memory.usagePercent.toFixed(1) || 0}%</span>
+                        </div>
+                        <div className="progress-bar">
+                            <div
+                                className="progress-fill memory"
+                                style={{ width: `${stats?.systemStats?.memory.usagePercent || 0}%` }}
+                            />
+                        </div>
+                        <div className="system-stat-info">
+                            {formatBytes(stats?.systemStats?.memory.used || 0)} / {formatBytes(stats?.systemStats?.memory.total || 0)}
+                        </div>
+                    </div>
+                    <div className="system-stat-item">
+                        <div className="system-stat-header">
+                            <span className="system-stat-label">💿 Disk</span>
+                            <span className="system-stat-value">{stats?.systemStats?.disk.usagePercent.toFixed(1) || 0}%</span>
+                        </div>
+                        <div className="progress-bar">
+                            <div
+                                className="progress-fill disk"
+                                style={{ width: `${stats?.systemStats?.disk.usagePercent || 0}%` }}
+                            />
+                        </div>
+                        <div className="system-stat-info">
+                            {formatBytes(stats?.systemStats?.disk.used || 0)} / {formatBytes(stats?.systemStats?.disk.total || 0)}
+                        </div>
+                    </div>
+                    <div className="system-stat-item">
+                        <div className="system-stat-header">
+                            <span className="system-stat-label">⏱️ Uptime</span>
+                            <span className="system-stat-value">{formatUptime(stats?.systemStats?.uptime || 0)}</span>
+                        </div>
                     </div>
                 </div>
             </div>

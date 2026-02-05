@@ -535,6 +535,28 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
+     * Report server system stats (CPU, RAM, Disk) to Redis
+     * Called alongside heartbeat
+     */
+    async reportSystemStats(serverId: string, stats: {
+        cpu: { usage: number; cores: number };
+        memory: { total: number; used: number; usagePercent: number };
+        disk: { total: number; used: number; usagePercent: number };
+        uptime: number;
+    }): Promise<void> {
+        try {
+            await this.client.set(
+                `${this.keyPrefix}server:${serverId}:system_stats`,
+                JSON.stringify(stats),
+                'EX',
+                60 // Expires if not updated
+            );
+        } catch (error) {
+            this.logger.error(`Failed to report system stats for ${serverId}:`, error);
+        }
+    }
+
+    /**
      * Set server info
      */
     async setServerInfo(serverId: string, info: { port: number; version: string }): Promise<void> {

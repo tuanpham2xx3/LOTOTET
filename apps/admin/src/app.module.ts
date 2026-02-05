@@ -6,6 +6,7 @@ import { AlertService } from './alert.service';
 import { AdminGateway } from './admin.gateway';
 import { AdminController } from './admin.controller';
 import { AuthService } from './auth.service';
+import { SystemService } from './system.service';
 
 @Module({
     imports: [ScheduleModule.forRoot()],
@@ -16,6 +17,7 @@ import { AuthService } from './auth.service';
         AlertService,
         AdminGateway,
         AuthService,
+        SystemService,
     ],
 })
 export class AppModule { }

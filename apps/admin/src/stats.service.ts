@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RedisService } from './redis.service';
 import { AlertService } from './alert.service';
+import { SystemService, SystemStats } from './system.service';
 
 export interface OverviewStats {
     totalConnections: number;
@@ -42,6 +43,7 @@ export class StatsService {
     constructor(
         private redis: RedisService,
         private alertService: AlertService,
+        private systemService: SystemService,
     ) { }
 
     /**
@@ -52,15 +54,17 @@ export class StatsService {
         servers: ServerInfo[];
         rooms: RoomInfo[];
         last7Days: DailyStats[];
+        systemStats: SystemStats;
     }> {
-        const [overview, servers, rooms, last7Days] = await Promise.all([
+        const [overview, servers, rooms, last7Days, systemStats] = await Promise.all([
             this.getOverviewStats(),
             this.redis.getActiveServers(),
             this.redis.getActiveRooms(),
             this.redis.getLast7DaysStats(),
+            this.systemService.getSystemStats(),
         ]);
 
-        return { overview, servers, rooms, last7Days };
+        return { overview, servers, rooms, last7Days, systemStats };
     }
 
     async getOverviewStats(): Promise<OverviewStats> {
