@@ -26,6 +26,7 @@ export function ChatBox() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const { isRecording, startRecording, stopRecording } = useAudioRecorder();
     const lastMessageCountRef = useRef(0);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -79,10 +80,12 @@ export function ChatBox() {
     };
 
     const handleRecordToggle = async () => {
+        // Clear previous errors
+        setUploadError(null);
+
         if (isRecording) {
             // Stop recording and upload
             const blob = await stopRecording();
-            console.log('[Chat] Recording stopped, blob:', blob);
             if (blob && socket) {
                 setIsUploading(true);
                 try {
@@ -91,16 +94,13 @@ export function ChatBox() {
                     formData.append('roomId', roomState?.roomId || '');
                     formData.append('socketId', socket.id || '');
 
-                    console.log('[Chat] Uploading to:', `${API_URL}/upload/audio`);
                     const response = await fetch(`${API_URL}/upload/audio`, {
                         method: 'POST',
                         body: formData,
                     });
 
-                    console.log('[Chat] Upload response:', response.status);
                     if (response.ok) {
                         const data = await response.json();
-                        console.log('[Chat] Upload success:', data);
                         // Send voice message
                         socket.emit('chat:send', {
                             content: '🎤 Tin nhắn thoại',
@@ -108,12 +108,12 @@ export function ChatBox() {
                         });
                     } else {
                         const errorText = await response.text();
-                        console.error('[Chat] Upload failed:', response.status, errorText);
-                        alert('Upload thất bại: ' + errorText);
+                        setUploadError('Upload thất bại: ' + errorText);
+                        setTimeout(() => setUploadError(null), 3000);
                     }
                 } catch (error) {
-                    console.error('[Chat] Upload error:', error);
-                    alert('Lỗi upload: ' + (error as Error).message);
+                    setUploadError('Lỗi upload: ' + (error as Error).message);
+                    setTimeout(() => setUploadError(null), 3000);
                 } finally {
                     setIsUploading(false);
                 }
@@ -122,8 +122,9 @@ export function ChatBox() {
             // Start recording
             try {
                 await startRecording();
-            } catch (error) {
-                alert('Không thể truy cập microphone. Vui lòng cấp quyền.');
+            } catch {
+                setUploadError('Không thể truy cập microphone. Vui lòng cấp quyền.');
+                setTimeout(() => setUploadError(null), 3000);
             }
         }
     };
@@ -132,6 +133,14 @@ export function ChatBox() {
 
     return (
         <div className={`chat-container ${isOpen ? 'open' : ''}`}>
+            {/* Error Toast */}
+            {uploadError && (
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+                    <div className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium shadow-lg">
+                        {uploadError}
+                    </div>
+                </div>
+            )}
             {/* Floating messages - show when chat is closed */}
             {!isOpen && floatingMessages.length > 0 && (
                 <div className="chat-floating-messages">

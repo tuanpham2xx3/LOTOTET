@@ -441,11 +441,12 @@ export default function RoomPage() {
         if (!socket) return;
 
         const handleKicked = (payload: { reason: string }) => {
-            console.log('[Room] Kicked:', payload);
-            alert(payload.reason || 'Bạn đã bị đuổi khỏi phòng');
-            reset();
-            localStorage.removeItem(`lototet_player_${roomId}`);
-            router.push('/');
+            setCopyNotification(payload.reason || 'Bạn đã bị đuổi khỏi phòng');
+            setTimeout(() => {
+                reset();
+                localStorage.removeItem(`lototet_player_${roomId}`);
+                router.push('/');
+            }, 2000);
         };
 
         socket.on('player:kicked', handleKicked);
@@ -460,7 +461,6 @@ export default function RoomPage() {
         if (!socket) return;
 
         const handleForfeited = (payload: { playerId: string; playerName: string }) => {
-            console.log('[Room] Player forfeited:', payload);
             setCopyNotification(`${payload.playerName} đã bỏ cuộc!`);
             setTimeout(() => setCopyNotification(null), 3000);
         };
@@ -477,7 +477,6 @@ export default function RoomPage() {
         if (!socket) return;
 
         const handleCancelled = (payload: { reason: string }) => {
-            console.log('[Room] Game cancelled:', payload);
             setCopyNotification(payload.reason || 'Trận đấu đã bị hủy!');
             setTimeout(() => setCopyNotification(null), 4000);
         };
@@ -554,20 +553,15 @@ export default function RoomPage() {
     };
 
     const handleNoNumber = useCallback(() => {
-        console.log('[handleNoNumber] Called with currentTurn:', currentTurn, 'socket:', !!socket, 'connected:', socket?.connected);
         if (!currentTurn) {
-            console.log('[handleNoNumber] No currentTurn, returning');
             return;
         }
         if (!socket) {
-            console.log('[handleNoNumber] No socket, returning');
             return;
         }
         if (!socket.connected) {
-            console.log('[handleNoNumber] Socket not connected, returning');
             return;
         }
-        console.log('[handleNoNumber] Emitting turn:noNumber with turnId:', currentTurn.turnId);
         socket.emit('turn:noNumber', { turnId: currentTurn.turnId });
     }, [currentTurn, socket]);
 

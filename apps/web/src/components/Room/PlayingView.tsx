@@ -56,8 +56,8 @@ export function PlayingView({
         if (currentTurn?.number && currentTurn.number !== lastPlayedNumberRef.current) {
             lastPlayedNumberRef.current = currentTurn.number;
             const audio = new Audio(`/nums_audio/${currentTurn.number}.wav`);
-            audio.play().catch((err) => {
-                console.warn('[Audio] Failed to play number audio:', err);
+            audio.play().catch(() => {
+                // Silent fail for audio autoplay restrictions
             });
         }
     }, [currentTurn?.number]);
@@ -89,26 +89,16 @@ export function PlayingView({
 
     // Auto-respond "noNumber" if player doesn't have the current number
     useEffect(() => {
-        console.log('[PlayingView] Auto-noNumber check:', {
-            turnNumber: currentTurn?.number,
-            turnId: currentTurn?.turnId,
-            hasTicket: !!myPlayer?.ticket,
-            hasResponded,
-            lastAutoResponded: lastAutoRespondedTurnRef.current,
-            playerId: myPlayer?.id,
-        });
+
 
         if (!currentTurn?.number || !currentTurn?.turnId || !myPlayer?.ticket) {
-            console.log('[PlayingView] Auto-noNumber: Skipping - missing data');
             return;
         }
         if (hasResponded) {
-            console.log('[PlayingView] Auto-noNumber: Skipping - already responded');
             return;
         }
         // Prevent double response for same turn
         if (lastAutoRespondedTurnRef.current === currentTurn.turnId) {
-            console.log('[PlayingView] Auto-noNumber: Skipping - already auto-responded this turn');
             return;
         }
 
@@ -124,11 +114,10 @@ export function PlayingView({
             if (hasNumber) break;
         }
 
-        console.log('[PlayingView] Auto-noNumber: hasNumber =', hasNumber);
+
 
         if (!hasNumber) {
             // Auto-send noNumber response
-            console.log('[PlayingView] Auto-noNumber: Sending noNumber for turn', currentTurn.turnId);
             lastAutoRespondedTurnRef.current = currentTurn.turnId;
             onNoNumber();
         }

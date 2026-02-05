@@ -7,4 +7,8 @@ export default defineConfig({
         port: 4001,
         open: true,
     },
+    build: {
+        sourcemap: false,
+        minify: 'terser',
+    },
 });

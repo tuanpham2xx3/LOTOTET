@@ -109,12 +109,10 @@ export default function App() {
         });
 
         newSocket.on('connect', () => {
-            console.log('Connected to admin server');
             setIsConnected(true);
         });
 
         newSocket.on('disconnect', () => {
-            console.log('Disconnected from admin server');
             setIsConnected(false);
         });
 
