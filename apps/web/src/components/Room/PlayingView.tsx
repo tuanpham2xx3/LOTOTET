@@ -169,148 +169,157 @@ export function PlayingView({
     };
 
     return (
-        <div className="animate-fadeInUp relative">
-            {/* BINGO Banner - Only shows when canBingo is true */}
-            {canBingo && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-                    <button
-                        onClick={() => {
-                            vibrate(200);
-                            onBingo();
-                        }}
-                        className="
-                            px-12 py-6 
-                            bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400
-                            text-4xl md:text-5xl font-black text-white
-                            rounded-2xl
-                            shadow-[0_0_60px_rgba(251,191,36,0.8)]
-                            animate-pulse
-                            hover:scale-110 active:scale-95
-                            transition-transform duration-200
-                            border-4 border-yellow-300
-                        "
-                    >
-                        HÔ BINGO!
-                    </button>
-                </div>
-            )}
-
-            {/* Mobile Layout */}
-            <div className="md:hidden flex flex-col items-center">
-                {/* Số hiện tại - không có card background */}
-                <div className="w-full flex justify-center">
-                    <CurrentNumber
-                        number={displayNumber}
-                        turnId={displayTurnId}
-                    />
-                </div>
-
-                {/* Ticket - điều chỉnh padding cho mobile */}
-                <div
-                    className="relative w-full max-w-[420px] mx-auto mt-2"
-                    style={{
-                        backgroundImage: 'url(/frame.svg)',
-                        backgroundSize: '100% 100%',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                    }}
-                >
-                    <div className="p-8 pt-10 pb-12 flex justify-center">
-                        <TicketGrid
-                            ticket={myPlayer?.ticket}
-                            marked={myPlayer?.marked}
-                            currentNumber={displayNumber}
-                            drawnNumbers={drawnNumbers}
-                            onCellClick={handleCellClick}
-                        />
+        <>
+            <div className="animate-fadeInUp relative">
+                {/* BINGO Banner - Only shows when canBingo is true */}
+                {canBingo && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+                        <button
+                            onClick={() => {
+                                vibrate(200);
+                                onBingo();
+                            }}
+                            className="
+                                px-12 py-6 
+                                bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400
+                                text-4xl md:text-5xl font-black text-white
+                                rounded-2xl
+                                shadow-[0_0_60px_rgba(251,191,36,0.8)]
+                                animate-pulse
+                                hover:scale-110 active:scale-95
+                                transition-transform duration-200
+                                border-4 border-yellow-300
+                            "
+                        >
+                            HÔ BINGO!
+                        </button>
                     </div>
-                </div>
+                )}
 
-            </div>
-
-            {/* Desktop Layout */}
-            <div className="hidden md:flex gap-6 justify-center">
-                {/* Left: Ticket */}
-                <div
-                    className="relative w-full max-w-lg"
-                    style={{
-                        backgroundImage: 'url(/frame.svg)',
-                        backgroundSize: '100% 100%',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                    }}
-                >
-                    <div className="p-8 sm:p-10 md:p-12 flex justify-center">
-                        <TicketGrid
-                            ticket={myPlayer?.ticket}
-                            marked={myPlayer?.marked}
-                            currentNumber={displayNumber}
-                            drawnNumbers={drawnNumbers}
-                            onCellClick={handleCellClick}
-                        />
-                    </div>
-                </div>
-
-                {/* Right: Sidebar - same width as ticket, with frame */}
-                <aside
-                    className="w-full max-w-lg"
-                    style={{
-                        backgroundImage: 'url(/frame.svg)',
-                        backgroundSize: '100% 100%',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                    }}
-                >
-                    {/* Current Number - Centered */}
-                    <div className="p-8 sm:p-10 md:p-12 h-full flex flex-col items-center justify-center min-h-[400px]">
-                        {/* Số hiện tại */}
+                {/* Mobile Layout */}
+                <div className="md:hidden flex flex-col items-center">
+                    {/* Số hiện tại - không có card background */}
+                    <div className="w-full flex justify-center">
                         <CurrentNumber
                             number={displayNumber}
                             turnId={displayTurnId}
                         />
                     </div>
 
-                </aside>
+                    {/* Ticket - điều chỉnh padding cho mobile */}
+                    <div
+                        className="relative w-full max-w-[420px] mx-auto mt-2"
+                        style={{
+                            backgroundImage: 'url(/frame.svg)',
+                            backgroundSize: '100% 100%',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <div className="p-8 pt-10 pb-12 flex justify-center">
+                            <TicketGrid
+                                ticket={myPlayer?.ticket}
+                                marked={myPlayer?.marked}
+                                currentNumber={displayNumber}
+                                drawnNumbers={drawnNumbers}
+                                onCellClick={handleCellClick}
+                            />
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* Desktop Layout */}
+                <div className="hidden md:flex gap-6 justify-center">
+                    {/* Left: Ticket */}
+                    <div
+                        className="relative w-full max-w-lg"
+                        style={{
+                            backgroundImage: 'url(/frame.svg)',
+                            backgroundSize: '100% 100%',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        <div className="p-8 sm:p-10 md:p-12 flex justify-center">
+                            <TicketGrid
+                                ticket={myPlayer?.ticket}
+                                marked={myPlayer?.marked}
+                                currentNumber={displayNumber}
+                                drawnNumbers={drawnNumbers}
+                                onCellClick={handleCellClick}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right: Sidebar - same width as ticket, with frame */}
+                    <aside
+                        className="w-full max-w-lg"
+                        style={{
+                            backgroundImage: 'url(/frame.svg)',
+                            backgroundSize: '100% 100%',
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center',
+                        }}
+                    >
+                        {/* Current Number - Centered */}
+                        <div className="p-8 sm:p-10 md:p-12 h-full flex flex-col items-center justify-center min-h-[400px]">
+                            {/* Số hiện tại */}
+                            <CurrentNumber
+                                number={displayNumber}
+                                turnId={displayTurnId}
+                            />
+                        </div>
+
+                    </aside>
+                </div>
             </div>
 
-            {/* Toast Notification - Bottom Left */}
+            {/* Toast Notification - Top Left (below header) - OUTSIDE animated div */}
             {showWaitingToast && game?.waitingBoard && game.waitingBoard.length > 0 && (
                 <div
-                    className="fixed bottom-4 left-4 z-40 max-w-xs animate-slideInLeft"
+                    className="fixed top-16 left-4 z-40 max-w-sm animate-fadeInDown"
                     onClick={() => setShowWaitingToast(false)}
                 >
-                    <div className="bg-slate-800/95 backdrop-blur-sm border border-amber-500/50 rounded-xl p-4 shadow-lg">
-                        <div className="flex items-center gap-2 text-amber-400 font-bold mb-2">
-                            <span>⚠️</span>
-                            <span>Sắp BINGO!</span>
-                        </div>
-                        <div className="space-y-2">
-                            {game.waitingBoard.slice(0, 3).map((entry, idx) => (
-                                <div
-                                    key={idx}
-                                    className={cn(
-                                        'text-sm flex items-center gap-2',
-                                        entry.playerId === myPlayer?.id ? 'text-amber-400' : 'text-slate-300'
-                                    )}
-                                >
-                                    <span className="font-medium">
-                                        {entry.playerId === myPlayer?.id ? '🎯 Bạn' : entry.playerName}
-                                    </span>
-                                    <span className="text-slate-500">chờ</span>
-                                    <span className="bg-amber-500/20 px-2 py-0.5 rounded font-mono">
+                    <div className="space-y-2">
+                        {game.waitingBoard.slice(0, 3).map((entry, idx) => (
+                            <div
+                                key={idx}
+                                className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg"
+                                style={{
+                                    background: 'linear-gradient(90deg, rgba(60, 0, 0, 0.95) 0%, rgba(80, 10, 10, 0.9) 100%)',
+                                    border: '2px solid #d4a000',
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+                                }}
+                            >
+                                <span className={cn(
+                                    'font-medium text-sm truncate max-w-[120px]',
+                                    entry.playerId === myPlayer?.id ? 'text-amber-300' : 'text-amber-100'
+                                )}>
+                                    {entry.playerId === myPlayer?.id ? 'Bạn' : entry.playerName}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-amber-200/60 text-sm">chờ</span>
+                                    <span className="bg-amber-500/30 px-3 py-1 rounded text-amber-200 font-mono text-sm font-bold">
                                         {entry.waitingNumbers.join(', ')}
                                     </span>
                                 </div>
-                            ))}
-                            {game.waitingBoard.length > 3 && (
-                                <div className="text-xs text-slate-500">
-                                    +{game.waitingBoard.length - 3} người khác
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        ))}
+                        {game.waitingBoard.length > 3 && (
+                            <div
+                                className="text-xs text-amber-200/60 text-center py-1.5 px-3 rounded-lg"
+                                style={{
+                                    background: 'rgba(60, 0, 0, 0.8)',
+                                    border: '1px solid rgba(212, 160, 0, 0.5)',
+                                }}
+                            >
+                                +{game.waitingBoard.length - 3} người khác
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

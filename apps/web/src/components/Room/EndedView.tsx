@@ -48,9 +48,9 @@ export function EndedView({
 
             {/* Winner Card */}
             <div className="relative z-10 w-full max-w-md">
-                {/* Trophy Icon */}
+                {/* Money Bag Icon */}
                 <div className="text-center mb-4">
-                    <span className="text-6xl md:text-7xl drop-shadow-lg">🏆</span>
+                    <img src="/money_bag.svg" alt="Prize" className="w-20 h-20 md:w-24 md:h-24 mx-auto drop-shadow-lg" />
                 </div>
 
                 {/* Winner Banner */}
@@ -70,8 +70,10 @@ export function EndedView({
                             borderBottom: '2px solid #d4a000',
                         }}
                     >
-                        <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300">
-                            🎉 BINGO! 🎉
+                        <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-300 flex items-center justify-center gap-2">
+                            <img src="/your_balance.svg" alt="" className="w-8 h-8 md:w-10 md:h-10" />
+                            BINGO!
+                            <img src="/your_balance.svg" alt="" className="w-8 h-8 md:w-10 md:h-10" />
                         </h1>
                     </div>
 
@@ -115,7 +117,7 @@ export function EndedView({
                         }}
                     >
                         <h3 className="text-sm font-bold text-amber-400">
-                            📊 Bảng xếp hạng lời / lỗ
+                            Bảng xếp hạng lời / lỗ
                         </h3>
                     </div>
 
@@ -182,21 +184,21 @@ export function EndedView({
                     {isHost && (
                         <button
                             onClick={onRestart}
-                            className="btn-traditional-red py-3 px-8 text-lg font-bold"
+                            className="btn-traditional-red py-3 px-8 text-lg font-bold flex-1 sm:flex-initial sm:min-w-[140px]"
                         >
-                            🔄 Chơi lại
+                            Chơi lại
                         </button>
                     )}
                     <button
                         onClick={onLeave}
-                        className="py-3 px-8 text-lg font-bold rounded-lg transition-all"
+                        className="py-3 px-8 text-lg font-bold rounded-lg transition-all flex-1 sm:flex-initial sm:min-w-[140px]"
                         style={{
                             background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)',
                             border: '2px solid #d4a000',
                             color: '#d4a000',
                         }}
                     >
-                        🚪 Rời phòng
+                        Rời phòng
                     </button>
                 </div>
 

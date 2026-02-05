@@ -72,7 +72,7 @@ export function PendingRequestsFloat({
             {visibleRequests.map((req) => (
                 <div
                     key={req.requestId}
-                    className={`flex items-center justify-between p-3 rounded-lg shadow-lg transition-all duration-500 ${req.fadeOut ? 'opacity-0 translate-x-4' : 'opacity-100 animate-fadeIn'}`}
+                    className={`flex items-center justify-between p-3 rounded-lg shadow-lg transition-all duration-500 ${req.fadeOut ? 'opacity-0 translate-x-4' : 'opacity-100 animate-fadeInDown'}`}
                     style={{
                         background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.95) 0%, rgba(92, 0, 0, 0.98) 100%)',
                         border: '2px solid #d4a000',
