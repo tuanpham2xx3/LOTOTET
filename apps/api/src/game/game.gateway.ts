@@ -73,7 +73,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server!: TypedServer;
 
-    private rateLimiter = new WsRateLimiter();
+    private rateLimiter: WsRateLimiter;
     private readonly serverId = process.env.SERVER_ID || `server-${process.env.PORT || '3011'}`;
     private connectionCount = 0;
 
@@ -88,6 +88,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         private roomManager: RoomManager,
         private redis: RedisService,
     ) {
+        // Initialize rate limiter with Redis
+        this.rateLimiter = new WsRateLimiter(this.redis);
         // Register server on startup
         this.registerServer();
     }
@@ -136,7 +138,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
         // Rate limit: 10 requests per 60s
         const ip = WsRateLimiter.getClientIp(client);
-        if (!this.rateLimiter.isAllowed(ip, 'room:create', 10, 60000)) {
+        if (!await this.rateLimiter.isAllowed(ip, 'room:create', 10, 60000)) {
             return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang tạo phòng quá nhanh. Vui lòng đợi.');
         }
 
@@ -178,7 +180,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
         // Rate limit: 10 requests per 60s
         const ip = WsRateLimiter.getClientIp(client);
-        if (!this.rateLimiter.isAllowed(ip, 'room:join', 10, 60000)) {
+        if (!await this.rateLimiter.isAllowed(ip, 'room:join', 10, 60000)) {
             return { success: false, error: { code: ErrorCode.VALIDATION_ERROR, message: 'Bạn đang gửi request quá nhanh. Vui lòng đợi.' } };
         }
 
@@ -737,7 +739,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async handleBingoClaim(@ConnectedSocket() client: TypedSocket) {
         // Rate limit: 3 requests per 10s
         const ip = WsRateLimiter.getClientIp(client);
-        if (!this.rateLimiter.isAllowed(ip, 'game:bingoClaim', 3, 10000)) {
+        if (!await this.rateLimiter.isAllowed(ip, 'game:bingoClaim', 3, 10000)) {
             return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang gửi request quá nhanh.');
         }
 
@@ -795,7 +797,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
         // Rate limit: 10 messages per 10s
         const ip = WsRateLimiter.getClientIp(client);
-        if (!this.rateLimiter.isAllowed(ip, 'chat:send', 10, 10000)) {
+        if (!await this.rateLimiter.isAllowed(ip, 'chat:send', 10, 10000)) {
             return this.sendError(client, ErrorCode.VALIDATION_ERROR, 'Bạn đang gửi tin nhắn quá nhanh.');
         }
 

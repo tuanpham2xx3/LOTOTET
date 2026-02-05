@@ -1,10 +1,14 @@
+import { RedisService } from '../redis/redis.service';
+
 /**
- * Simple WebSocket Rate Limiter
- * Tracks requests per IP per event type
+ * WebSocket Rate Limiter with Redis Backend
+ * Falls back to in-memory Map if Redis unavailable
  */
 export class WsRateLimiter {
-    // Map: key = "ip:eventName" => array of request timestamps
-    private readonly requests = new Map<string, number[]>();
+    // In-memory fallback when Redis is unavailable
+    private readonly memoryRequests = new Map<string, number[]>();
+
+    constructor(private readonly redis: RedisService) { }
 
     /**
      * Check if request is allowed and track it
@@ -14,25 +18,45 @@ export class WsRateLimiter {
      * @param windowMs - Time window in milliseconds
      * @returns true if allowed, false if rate limited
      */
-    isAllowed(ip: string, eventName: string, limit: number, windowMs: number): boolean {
+    async isAllowed(ip: string, eventName: string, limit: number, windowMs: number): Promise<boolean> {
+        // Try Redis first
+        if (this.redis.isConnected()) {
+            const windowSeconds = Math.ceil(windowMs / 1000);
+            const result = await this.redis.checkRateLimit(ip, eventName, limit, windowSeconds);
+
+            if (!result.allowed) {
+                console.log(`[RateLimiter] BLOCKED ${ip}:${eventName}: ${result.count}/${limit} (Redis)`);
+            }
+
+            return result.allowed;
+        }
+
+        // Fallback to in-memory
+        return this.isAllowedMemory(ip, eventName, limit, windowMs);
+    }
+
+    /**
+     * In-memory fallback rate limiter
+     */
+    private isAllowedMemory(ip: string, eventName: string, limit: number, windowMs: number): boolean {
         const key = `${ip}:${eventName}`;
         const now = Date.now();
 
         // Get existing requests
-        let timestamps = this.requests.get(key) || [];
+        let timestamps = this.memoryRequests.get(key) || [];
 
         // Filter out expired requests
         timestamps = timestamps.filter(t => t > now - windowMs);
 
         // Check limit
         if (timestamps.length >= limit) {
-            console.log(`[RateLimiter] BLOCKED ${key}: ${timestamps.length}/${limit} in ${windowMs}ms`);
+            console.log(`[RateLimiter] BLOCKED ${key}: ${timestamps.length}/${limit} in ${windowMs}ms (Memory)`);
             return false;
         }
 
         // Add current request
         timestamps.push(now);
-        this.requests.set(key, timestamps);
+        this.memoryRequests.set(key, timestamps);
 
         return true;
     }
@@ -44,6 +68,21 @@ export class WsRateLimiter {
         return client.handshake?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ||
             client.handshake?.address ||
             client.id;
+    }
+
+    /**
+     * Cleanup old in-memory entries (call periodically)
+     */
+    cleanup(): void {
+        const now = Date.now();
+        for (const [key, timestamps] of this.memoryRequests.entries()) {
+            const filtered = timestamps.filter(t => t > now - 60000);
+            if (filtered.length === 0) {
+                this.memoryRequests.delete(key);
+            } else {
+                this.memoryRequests.set(key, filtered);
+            }
+        }
     }
 }
 

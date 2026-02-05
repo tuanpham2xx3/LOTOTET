@@ -78,7 +78,7 @@ export class UploadController {
         }
 
         // Check rate limit
-        const rateCheck = this.uploadService.checkRateLimit(validation.playerId!);
+        const rateCheck = await this.uploadService.checkRateLimit(validation.playerId!);
         if (!rateCheck.allowed) {
             // Clean up temp file
             if (file) {

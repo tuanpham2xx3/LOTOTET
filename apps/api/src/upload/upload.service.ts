@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RoomManager } from '../game/room.manager';
+import { RedisService } from '../redis/redis.service';
 import { join } from 'path';
 import { existsSync, mkdirSync, rmSync, readdirSync } from 'fs';
 
@@ -11,12 +12,16 @@ import { existsSync, mkdirSync, rmSync, readdirSync } from 'fs';
 export class UploadService {
     private readonly logger = new Logger(UploadService.name);
 
-    // Rate limiting: track uploads per player
+    // In-memory fallback rate limiting
     private playerUploadCount = new Map<string, { count: number; resetAt: number }>();
     private readonly RATE_LIMIT = 5; // 5 uploads per minute
     private readonly RATE_WINDOW = 60 * 1000; // 1 minute
+    private readonly RATE_WINDOW_SECONDS = 60;
 
-    constructor(private readonly roomManager: RoomManager) { }
+    constructor(
+        private readonly roomManager: RoomManager,
+        private readonly redis: RedisService,
+    ) { }
 
     /**
      * Get the uploads directory for a specific room
@@ -67,9 +72,37 @@ export class UploadService {
 
     /**
      * Check rate limit for a player
+     * Uses Redis if available, falls back to in-memory
      * Returns true if upload is allowed, false if rate limited
      */
-    checkRateLimit(playerId: string): { allowed: boolean; retryAfter?: number } {
+    async checkRateLimit(playerId: string): Promise<{ allowed: boolean; retryAfter?: number }> {
+        // Try Redis first
+        if (this.redis.isConnected()) {
+            const result = await this.redis.checkRateLimit(
+                playerId,
+                'upload:audio',
+                this.RATE_LIMIT,
+                this.RATE_WINDOW_SECONDS,
+            );
+
+            if (!result.allowed) {
+                this.logger.log(`[RateLimit] BLOCKED upload for ${playerId}: ${result.count}/${this.RATE_LIMIT} (Redis)`);
+            }
+
+            return {
+                allowed: result.allowed,
+                retryAfter: result.retryAfter,
+            };
+        }
+
+        // Fallback to in-memory
+        return this.checkRateLimitMemory(playerId);
+    }
+
+    /**
+     * In-memory fallback rate limiter
+     */
+    private checkRateLimitMemory(playerId: string): { allowed: boolean; retryAfter?: number } {
         const now = Date.now();
         const record = this.playerUploadCount.get(playerId);
 
@@ -84,6 +117,7 @@ export class UploadService {
 
         if (record.count >= this.RATE_LIMIT) {
             const retryAfter = Math.ceil((record.resetAt - now) / 1000);
+            this.logger.log(`[RateLimit] BLOCKED upload for ${playerId}: ${record.count}/${this.RATE_LIMIT} (Memory)`);
             return { allowed: false, retryAfter };
         }
 

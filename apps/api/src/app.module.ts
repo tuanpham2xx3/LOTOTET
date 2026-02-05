@@ -3,6 +3,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { RedisModule } from './redis/redis.module';
 import { GameModule } from './game/game.module';
 import { UploadModule } from './upload/upload.module';
+import { HealthController } from './health.controller';
 
 @Module({
     imports: [
@@ -14,5 +15,7 @@ import { UploadModule } from './upload/upload.module';
         GameModule,
         UploadModule,
     ],
+    controllers: [HealthController],
 })
 export class AppModule { }
+

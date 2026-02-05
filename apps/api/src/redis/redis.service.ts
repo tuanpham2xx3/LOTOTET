@@ -107,6 +107,60 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     // ==========================================
+    // Rate Limiter Operations
+    // ==========================================
+
+    /**
+     * Check and increment rate limit counter
+     * Uses sliding window counter pattern with Redis INCR + EXPIRE
+     * 
+     * @param identifier - Unique identifier (e.g., IP address, player ID)
+     * @param eventType - Type of event being rate limited
+     * @param limit - Maximum requests allowed in window
+     * @param windowSeconds - Time window in seconds
+     * @returns Object with allowed status, current count, and retry time if blocked
+     */
+    async checkRateLimit(
+        identifier: string,
+        eventType: string,
+        limit: number,
+        windowSeconds: number,
+    ): Promise<{ allowed: boolean; count: number; retryAfter?: number }> {
+        if (!this.isConnected()) {
+            // Redis not available, allow request (fallback)
+            this.logger.warn(`Redis not connected, skipping rate limit for ${eventType}`);
+            return { allowed: true, count: 0 };
+        }
+
+        try {
+            // Create time-based window key for sliding window
+            const windowKey = Math.floor(Date.now() / (windowSeconds * 1000));
+            const key = `${this.keyPrefix}ratelimit:${identifier}:${eventType}:${windowKey}`;
+
+            // Increment counter and get new value
+            const count = await this.client.incr(key);
+
+            // Set expiry on first request (when count is 1)
+            if (count === 1) {
+                // Add extra second to ensure key doesn't expire mid-window
+                await this.client.expire(key, windowSeconds + 1);
+            }
+
+            if (count > limit) {
+                // Calculate approximate retry time
+                const retryAfter = windowSeconds;
+                return { allowed: false, count, retryAfter };
+            }
+
+            return { allowed: true, count };
+        } catch (error) {
+            this.logger.error(`Rate limit check failed for ${eventType}:`, error);
+            // On error, allow request to prevent blocking legitimate users
+            return { allowed: true, count: 0 };
+        }
+    }
+
+    // ==========================================
     // Room Operations
     // ==========================================
 
