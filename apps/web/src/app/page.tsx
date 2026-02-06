@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/stores/gameStore';
+import { getServerForNewRoom, getServerForRoom } from '@/lib/socket';
 
 export default function HomePage() {
   const router = useRouter();
@@ -15,10 +16,11 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize socket connection
-  const ensureConnected = () => {
+  // Initialize socket connection (with load balancer)
+  const ensureConnected = async () => {
     if (!connected) {
-      connect();
+      const serverUrl = await getServerForNewRoom();
+      connect(serverUrl);
     }
     return useGameStore.getState().socket;
   };
@@ -33,7 +35,7 @@ export default function HomePage() {
     setError(null);
 
     try {
-      const s = ensureConnected();
+      const s = await ensureConnected();
       if (!s) {
         setError('Không thể kết nối server');
         return;
@@ -82,7 +84,11 @@ export default function HomePage() {
     setError(null);
 
     try {
-      const s = ensureConnected();
+      // Get server URL for the specific room (load balancer)
+      const serverUrl = await getServerForRoom(roomId.toUpperCase());
+      connect(serverUrl);
+
+      const s = useGameStore.getState().socket;
       if (!s) {
         setError('Không thể kết nối server');
         return;
