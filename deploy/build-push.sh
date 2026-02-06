@@ -3,7 +3,7 @@
 # Build và Push Docker Images lên Docker Hub
 # ============================================
 # Usage: ./build-push.sh <docker-hub-username> [tag]
-# Example: ./build-push.sh tuanpham2xx3 v1.0.0
+# Example: ./build-push.sh tuan282 v1.0.0
 # ============================================
 
 set -e
@@ -11,7 +11,7 @@ set -e
 # Check arguments
 if [ -z "$1" ]; then
     echo "❌ Usage: ./build-push.sh <docker-hub-username> [tag]"
-    echo "   Example: ./build-push.sh tuanpham2xx3 v1.0.0"
+    echo "   Example: ./build-push.sh tuan282 v1.0.0"
     exit 1
 fi
 

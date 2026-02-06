@@ -2,7 +2,7 @@
 # Build và Push Docker Images lên Docker Hub (Windows)
 # ============================================
 # Usage: .\build-push.ps1 -Username <docker-hub-username> [-Tag <tag>]
-# Example: .\build-push.ps1 -Username tuanpham2xx3 -Tag v1.0.0
+# Example: .\build-push.ps1 -Username tuan282 -Tag v1.0.0
 # ============================================
 
 param(
@@ -57,8 +57,6 @@ Write-Host ""
 Write-Host "📦 Building lototet-web..." -ForegroundColor Yellow
 docker build -f deploy/Dockerfile.web `
     --build-arg NEXT_PUBLIC_ADMIN_URL=$AdminApiUrl `
-    --build-arg NEXT_PUBLIC_SOCKET_URL="https://ltapi.iceteadev.site" `
-    --build-arg NEXT_PUBLIC_API_URL="https://ltapi.iceteadev.site" `
     -t "$Username/lototet-web:$Tag" .
 if ($LASTEXITCODE -ne 0) { exit 1 }
 

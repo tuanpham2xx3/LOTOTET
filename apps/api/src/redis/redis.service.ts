@@ -612,15 +612,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
      */
     async setServerInfo(serverId: string, info: { port: number; version: string; url?: string }): Promise<void> {
         try {
-            const data: Record<string, string> = {
-                port: info.port.toString(),
-                version: info.version,
-                startedAt: Date.now().toString(),
-            };
-            if (info.url) {
-                data.url = info.url;
+            if (!this.isConnected()) {
+                this.logger.warn(`Redis not connected, cannot set server info for ${serverId}`);
+                return;
             }
-            await this.client.hset(`${this.keyPrefix}server:${serverId}:info`, data);
+
+            const key = `${this.keyPrefix}server:${serverId}:info`;
+            const fields: string[] = [
+                'port', info.port.toString(),
+                'version', info.version,
+                'startedAt', Date.now().toString(),
+            ];
+            if (info.url) {
+                fields.push('url', info.url);
+            }
+
+            // Use hset with spread array for better compatibility
+            await this.client.hset(key, ...fields);
+            this.logger.log(`✅ Registered server info for ${serverId}: url=${info.url || 'N/A'}`);
         } catch (error) {
             this.logger.error(`Failed to set server info for ${serverId}:`, error);
         }

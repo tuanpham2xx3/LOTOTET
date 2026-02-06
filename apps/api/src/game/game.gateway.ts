@@ -6,6 +6,7 @@ import {
     MessageBody,
     OnGatewayConnection,
     OnGatewayDisconnect,
+    OnGatewayInit,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -73,7 +74,7 @@ function isAllowedOrigin(origin: string | undefined): boolean {
         credentials: true,
     },
 })
-export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private readonly logger = new Logger(GameGateway.name);
 
     @WebSocketServer()
@@ -98,8 +99,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
         // Initialize rate limiter with Redis
         this.rateLimiter = new WsRateLimiter(this.redis);
-        // Register server on startup
-        this.registerServer();
+        // Note: registerServer() moved to afterInit() to ensure Redis is connected
+    }
+
+    /**
+     * Called after WebSocket server is initialized
+     * This ensures Redis connection is ready before registering server
+     */
+    async afterInit() {
+        this.logger.log('WebSocket Gateway initialized');
+        // Wait a bit for Redis to be fully ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.registerServer();
     }
 
     private async registerServer() {
