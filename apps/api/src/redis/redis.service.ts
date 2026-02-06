@@ -200,10 +200,61 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             const pipeline = this.client.pipeline();
             pipeline.del(`${this.keyPrefix}room:${roomId}`);
             pipeline.srem(`${this.keyPrefix}rooms:active`, roomId);
+            pipeline.del(`${this.keyPrefix}room:${roomId}:server`); // Also remove server mapping
             await pipeline.exec();
         } catch (error) {
             this.logger.error(`Failed to delete room ${roomId}:`, error);
             throw error;
+        }
+    }
+
+    // ==========================================
+    // Room-to-Server Registry (for Load Balancing)
+    // ==========================================
+
+    /**
+     * Register which server hosts a room (for load balancing)
+     * @param roomId - Room ID
+     * @param serverUrl - Public URL of the server hosting this room
+     */
+    async registerRoomServer(roomId: string, serverUrl: string): Promise<void> {
+        try {
+            await this.client.set(
+                `${this.keyPrefix}room:${roomId}:server`,
+                serverUrl,
+                'EX',
+                86400 // 24 hours TTL (room should be closed before this)
+            );
+            this.logger.debug(`Registered room ${roomId} on server ${serverUrl}`);
+        } catch (error) {
+            this.logger.error(`Failed to register room server for ${roomId}:`, error);
+        }
+    }
+
+    /**
+     * Unregister room from server (when room is deleted)
+     * @param roomId - Room ID
+     */
+    async unregisterRoomServer(roomId: string): Promise<void> {
+        try {
+            await this.client.del(`${this.keyPrefix}room:${roomId}:server`);
+            this.logger.debug(`Unregistered room ${roomId} from server`);
+        } catch (error) {
+            this.logger.error(`Failed to unregister room server for ${roomId}:`, error);
+        }
+    }
+
+    /**
+     * Get which server hosts a specific room
+     * @param roomId - Room ID
+     * @returns Server URL or null if room not found
+     */
+    async getRoomServer(roomId: string): Promise<string | null> {
+        try {
+            return await this.client.get(`${this.keyPrefix}room:${roomId}:server`);
+        } catch (error) {
+            this.logger.error(`Failed to get room server for ${roomId}:`, error);
+            return null;
         }
     }
 
@@ -557,15 +608,19 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
-     * Set server info
+     * Set server info (including URL for load balancing)
      */
-    async setServerInfo(serverId: string, info: { port: number; version: string }): Promise<void> {
+    async setServerInfo(serverId: string, info: { port: number; version: string; url?: string }): Promise<void> {
         try {
-            await this.client.hset(`${this.keyPrefix}server:${serverId}:info`, {
+            const data: Record<string, string> = {
                 port: info.port.toString(),
                 version: info.version,
                 startedAt: Date.now().toString(),
-            });
+            };
+            if (info.url) {
+                data.url = info.url;
+            }
+            await this.client.hset(`${this.keyPrefix}server:${serverId}:info`, data);
         } catch (error) {
             this.logger.error(`Failed to set server info for ${serverId}:`, error);
         }

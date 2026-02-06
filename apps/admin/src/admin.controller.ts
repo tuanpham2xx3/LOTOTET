@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpException, HttpStatus, Req, Param } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { AuthService } from './auth.service';
 import { RedisService } from './redis.service';
@@ -72,5 +72,47 @@ export class AdminController {
     @Get('stats/rooms')
     async getRooms() {
         return await this.redis.getActiveRooms();
+    }
+
+    // ==========================================
+    // Load Balancer Endpoints
+    // ==========================================
+
+    /**
+     * Get best server for creating a new room (least connections)
+     * Frontend calls this before creating a room
+     */
+    @Get('loadbalancer/server')
+    async getBestServer() {
+        const result = await this.redis.getBestServerForNewRoom();
+
+        if (!result) {
+            throw new HttpException('No servers available', HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        return {
+            success: true,
+            serverId: result.serverId,
+            serverUrl: result.serverUrl,
+        };
+    }
+
+    /**
+     * Get server URL for an existing room
+     * Frontend calls this before joining a room
+     */
+    @Get('loadbalancer/room/:roomId')
+    async getServerForRoom(@Param('roomId') roomId: string) {
+        const serverUrl = await this.redis.getRoomServer(roomId);
+
+        if (!serverUrl) {
+            throw new HttpException('Room not found or server offline', HttpStatus.NOT_FOUND);
+        }
+
+        return {
+            success: true,
+            roomId,
+            serverUrl,
+        };
     }
 }

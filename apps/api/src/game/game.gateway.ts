@@ -81,6 +81,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     private rateLimiter: WsRateLimiter;
     private readonly serverId = process.env.SERVER_ID || `server-${process.env.PORT || '3011'}`;
+    private readonly serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || '3011'}`;
     private connectionCount = 0;
 
     // Queue mechanism to handle race condition when multiple players respond simultaneously
@@ -105,6 +106,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await this.redis.setServerInfo(this.serverId, {
             port: parseInt(process.env.PORT || '3011'),
             version: '1.0.0',
+            url: this.serverUrl,
         });
         // Start heartbeat
         this.startHeartbeat();
@@ -182,6 +184,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         // Track stats
         await this.redis.incrementTotalRoomsCreated();
+
+        // Register room with this server for load balancing
+        await this.redis.registerRoomServer(roomId, this.serverUrl);
 
         client.join(roomId);
         client.data.roomId = roomId;

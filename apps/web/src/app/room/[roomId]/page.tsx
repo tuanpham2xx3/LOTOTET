@@ -16,6 +16,7 @@ import {
 import { LobbyView, PlayingView, EndedView, GameMenu, PendingRequestsFloat } from '@/components/Room';
 import { ChatBox } from '@/components/Chat';
 import { formatNumber, formatBalance } from '@/lib/utils';
+import { getServerForRoom } from '@/lib/socket';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
 
 // Component hiển thị form join phòng hoặc trạng thái chờ duyệt
@@ -37,10 +38,12 @@ function JoinRoomForm({
 
     const sessionKey = `lototet_pending_${roomId}`;
 
-    // Initialize socket connection
-    const ensureConnected = () => {
+    // Initialize socket connection (with load balancer)
+    const ensureConnected = async () => {
         if (!connected) {
-            connect();
+            // Query load balancer for correct server URL
+            const serverUrl = await getServerForRoom(roomId.toUpperCase());
+            connect(serverUrl);
         }
         return useGameStore.getState().socket;
     };
@@ -56,7 +59,7 @@ function JoinRoomForm({
         setError(null);
 
         try {
-            const s = ensureConnected();
+            const s = await ensureConnected();
             if (!s) {
                 setError('Không thể kết nối server');
                 setLoading(false);
@@ -78,7 +81,7 @@ function JoinRoomForm({
             });
 
             // Join room - gửi request, chờ host duyệt
-            s.emit('room:join', { roomId: roomId.toUpperCase(), name: playerName, balance: playerBalance }, (response) => {
+            s.emit('room:join', { roomId: roomId.toUpperCase(), name: playerName, balance: playerBalance }, (response: { success: boolean; error?: { message: string } }) => {
                 setLoading(false);
                 if (response.success) {
                     // Lưu thông tin pending request vào sessionStorage
@@ -406,14 +409,19 @@ export default function RoomPage() {
         return '';
     };
 
-    // Connect on mount
+    // Connect on mount (with load balancer)
     useEffect(() => {
-        connect();
+        const initConnection = async () => {
+            // Query load balancer for correct server URL
+            const serverUrl = await getServerForRoom(roomId.toUpperCase());
+            connect(serverUrl);
+        };
+        initConnection();
 
         return () => {
             // Cleanup on unmount
         };
-    }, [connect]);
+    }, [connect, roomId]);
 
     // Check if we need to show join form (no saved player for this room)
     useEffect(() => {

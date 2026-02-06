@@ -1,0 +1,74 @@
+# ============================================
+# LOTOTET VPS Admin - Docker Compose (Docker Hub)
+# ============================================
+# Sử dụng images từ Docker Hub thay vì build local
+# ============================================
+
+services:
+  # ============================================
+  # Redis Server
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: lototet-redis
+    command: >
+      redis-server  --appendonly yes  --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Admin API Service (from Docker Hub)
+  # ============================================
+  admin:
+    image: ${DOCKER_HUB_USERNAME}/lototet-admin:${IMAGE_TAG:-latest}
+    container_name: lototet-admin
+    environment:
+      - NODE_ENV=production
+      - ADMIN_PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+  # ============================================
+  # Admin Web (from Docker Hub)
+  # ============================================
+  admin-web:
+    image: ${DOCKER_HUB_USERNAME}/lototet-admin-web:${IMAGE_TAG:-latest}
+    container_name: lototet-admin-web
+    ports:
+      - "80:80"
+    depends_on:
+      - admin
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/nginx-health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis_data:
+    driver: local

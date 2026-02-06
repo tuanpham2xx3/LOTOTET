@@ -5,6 +5,9 @@ import BackgroundMusic from '@/components/BackgroundMusic';
 export const metadata: Metadata = {
   title: 'LOTOTET - Game Lô Tô Online',
   description: 'Chơi lô tô online với bạn bè',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

@@ -7,7 +7,7 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import type { ChatMessage } from '@lototet/shared';
 import './Chat.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ltapi.iceteadev.site';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api1.iceteadev.site';
 
 // Floating message with fade effect
 interface FloatingMessage extends ChatMessage {

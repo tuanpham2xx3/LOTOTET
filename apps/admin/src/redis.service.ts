@@ -340,6 +340,77 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     // ==========================================
+    // Load Balancer (for Multi-Server Support)
+    // ==========================================
+
+    /**
+     * Get which server hosts a specific room
+     * @param roomId - Room ID
+     * @returns Server URL or null if room not found
+     */
+    async getRoomServer(roomId: string): Promise<string | null> {
+        try {
+            return await this.client.get(`${this.keyPrefix}room:${roomId}:server`);
+        } catch (error) {
+            this.logger.error(`Failed to get room server for ${roomId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Get the best server for creating a new room (least connections)
+     * @returns Server URL of the server with least connections, or null if no servers online
+     */
+    async getBestServerForNewRoom(): Promise<{ serverId: string; serverUrl: string } | null> {
+        try {
+            const servers = await this.getActiveServers();
+            const onlineServers = servers.filter(s => s.isOnline);
+
+            if (onlineServers.length === 0) {
+                this.logger.warn('No online servers available for load balancing');
+                return null;
+            }
+
+            // Find server with least connections
+            const bestServer = onlineServers.reduce((best, current) =>
+                current.connections < best.connections ? current : best
+            );
+
+            // Get server URL from server info
+            const serverUrl = await this.getServerUrl(bestServer.serverId);
+
+            if (!serverUrl) {
+                this.logger.warn(`Server ${bestServer.serverId} has no URL configured`);
+                return null;
+            }
+
+            return {
+                serverId: bestServer.serverId,
+                serverUrl,
+            };
+        } catch (error) {
+            this.logger.error('Failed to get best server:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get server URL by serverId
+     * @param serverId - Server ID
+     * @returns Server URL or null
+     */
+    async getServerUrl(serverId: string): Promise<string | null> {
+        try {
+            // Server URL is stored in server info hash
+            const info = await this.client.hgetall(`${this.keyPrefix}server:${serverId}:info`);
+            return info?.url || null;
+        } catch (error) {
+            this.logger.error(`Failed to get server URL for ${serverId}:`, error);
+            return null;
+        }
+    }
+
+    // ==========================================
     // Broadcast
     // ==========================================
 

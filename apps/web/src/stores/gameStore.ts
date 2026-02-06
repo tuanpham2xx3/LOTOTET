@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { RoomState, Player, RoomPhase, WaitingState, ChatMessage } from '@lototet/shared';
-import { getSocket, connectSocket, disconnectSocket, type TypedSocket } from '@/lib/socket';
+import { getSocket, connectSocket, disconnectSocket, resetSocket, type TypedSocket } from '@/lib/socket';
 
 interface CurrentTurn {
     turnId: number;
@@ -29,7 +29,7 @@ interface GameStore {
     notification: Notification | null;
 
     // Actions
-    connect: () => void;
+    connect: (serverUrl?: string) => void;
     disconnect: () => void;
     setRoomState: (state: RoomState) => void;
     setMyPlayerId: (playerId: string) => void;
@@ -50,8 +50,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     notification: null,
 
     // Actions
-    connect: () => {
-        const socket = connectSocket();
+    connect: (serverUrl?: string) => {
+        const socket = connectSocket(serverUrl);
 
         socket.on('connect', () => {
             set({ connected: true });
@@ -115,6 +115,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     disconnect: () => {
         disconnectSocket();
+        resetSocket(); // Reset socket to allow new URL on next connect
         set({
             socket: null,
             connected: false,

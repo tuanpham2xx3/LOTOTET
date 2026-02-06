@@ -1,0 +1,41 @@
+# Dependencies - exclude all node_modules
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build outputs (keep for multi-stage builds that need them)
+# dist
+# build
+
+# Development
+.git
+.gitignore
+.vscode
+.idea
+*.md
+!README.md
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Documentation
+docs/
+
+# Environment (will be passed via docker-compose)
+.env
+.env.local
+.env.*.local
+apps/*/.env
