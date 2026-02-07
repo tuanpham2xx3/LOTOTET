@@ -102,6 +102,7 @@ export interface GameState {
   drawnNumbers: number[];
   turnResponses: Record<string, TurnResponse>; // playerId -> response
   waitingBoard: WaitingState[]; // Players waiting for specific numbers
+  notifiedEntries: string[]; // Track "playerId_row_waitingNumber" đã thông báo
 }
 
 /**

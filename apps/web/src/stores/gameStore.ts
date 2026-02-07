@@ -28,6 +28,9 @@ interface GameStore {
     // Notification from admin
     notification: Notification | null;
 
+    // New waiting entries (only NEW ones from waiting:update event)
+    newWaitingEntries: WaitingState[];
+
     // Actions
     connect: (serverUrl?: string) => void;
     disconnect: () => void;
@@ -36,6 +39,7 @@ interface GameStore {
     setCurrentTurn: (turn: CurrentTurn) => void;
     setPendingPlayers: (ids: string[]) => void;
     clearNotification: () => void;
+    clearNewWaitingEntries: () => void;
     reset: () => void;
 }
 
@@ -48,6 +52,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     currentTurn: null,
     pendingPlayerIds: [],
     notification: null,
+    newWaitingEntries: [],
 
     // Actions
     connect: (serverUrl?: string) => {
@@ -110,6 +115,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
             set({ notification: payload });
         });
 
+        // Waiting board update - only new entries
+        socket.on('waiting:update', (payload) => {
+            if (payload.waitingBoard && payload.waitingBoard.length > 0) {
+                set({ newWaitingEntries: payload.waitingBoard });
+            }
+        });
+
         set({ socket });
     },
 
@@ -124,6 +136,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             currentTurn: null,
             pendingPlayerIds: [],
             notification: null,
+            newWaitingEntries: [],
         });
     },
 
@@ -132,6 +145,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     setCurrentTurn: (turn) => set({ currentTurn: turn }),
     setPendingPlayers: (ids) => set({ pendingPlayerIds: ids }),
     clearNotification: () => set({ notification: null }),
+    clearNewWaitingEntries: () => set({ newWaitingEntries: [] }),
 
     reset: () =>
         set({
@@ -180,3 +194,8 @@ export const useClearNotification = () => useGameStore((state) => state.clearNot
 export const useChatMessages = (): ChatMessage[] =>
     useGameStore((state) => state.roomState?.messages ?? []);
 
+export const useNewWaitingEntries = (): WaitingState[] =>
+    useGameStore((state) => state.newWaitingEntries);
+
+export const useClearNewWaitingEntries = () =>
+    useGameStore((state) => state.clearNewWaitingEntries);

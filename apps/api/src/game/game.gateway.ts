@@ -81,8 +81,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     server!: TypedServer;
 
     private rateLimiter: WsRateLimiter;
-    private readonly serverId = process.env.SERVER_ID || `server-${process.env.PORT || '3011'}`;
-    private readonly serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || '3011'}`;
+    private readonly serverId = process.env.SERVER_ID || `server-${process.env.PORT || '3010'}`;
+    private readonly serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || '3010'}`;
     private connectionCount = 0;
 
     // Queue mechanism to handle race condition when multiple players respond simultaneously
@@ -674,10 +674,12 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
                     pendingPlayerIds,
                 });
 
-                // Broadcast waiting board update
-                this.server.to(roomId).emit('waiting:update', {
-                    waitingBoard: room.game.waitingBoard,
-                });
+                // Broadcast NEW waiting entries only
+                if (result.data.newWaitingEntries.length > 0) {
+                    this.server.to(roomId).emit('waiting:update', {
+                        waitingBoard: result.data.newWaitingEntries,
+                    });
+                }
             }
 
             await this.broadcastRoomState(roomId);
@@ -723,10 +725,12 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
                     pendingPlayerIds,
                 });
 
-                // Broadcast waiting board update
-                this.server.to(roomId).emit('waiting:update', {
-                    waitingBoard: room.game.waitingBoard,
-                });
+                // Broadcast NEW waiting entries only
+                if (result.data.newWaitingEntries.length > 0) {
+                    this.server.to(roomId).emit('waiting:update', {
+                        waitingBoard: result.data.newWaitingEntries,
+                    });
+                }
             }
 
             await this.broadcastRoomState(roomId);

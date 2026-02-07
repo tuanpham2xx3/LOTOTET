@@ -91,6 +91,7 @@ export class RoomGameService {
             drawnNumbers: [],
             turnResponses: {},
             waitingBoard: [],
+            notifiedEntries: [],
         };
         await this.roomManager.update(roomId, room);
 
@@ -229,7 +230,7 @@ export class RoomGameService {
         turnId: number,
         row: number,
         col: number,
-    ): Promise<ServiceResult<{ hasWaitingUpdate: boolean }>> {
+    ): Promise<ServiceResult<{ hasWaitingUpdate: boolean; newWaitingEntries: { playerId: string; playerName: string; waitingNumbers: number[]; row: number }[] }>> {
         const room = await this.roomManager.get(roomId);
 
         if (!room) {
@@ -285,11 +286,11 @@ export class RoomGameService {
         room.game.turnResponses[player.id] = 'MARKED';
 
         // Check for waiting state (4/5 in a row)
-        this.updateWaitingBoard(room);
+        const newWaitingEntries = this.updateWaitingBoard(room);
 
         await this.roomManager.update(roomId, room);
 
-        return { success: true, data: { hasWaitingUpdate: true } };
+        return { success: true, data: { hasWaitingUpdate: true, newWaitingEntries } };
     }
 
     /**
@@ -301,7 +302,7 @@ export class RoomGameService {
         socketId: string,
         row: number,
         col: number,
-    ): Promise<ServiceResult<{ hasWaitingUpdate: boolean }>> {
+    ): Promise<ServiceResult<{ hasWaitingUpdate: boolean; newWaitingEntries: { playerId: string; playerName: string; waitingNumbers: number[]; row: number }[] }>> {
         const room = await this.roomManager.get(roomId);
 
         if (!room) {
@@ -363,11 +364,11 @@ export class RoomGameService {
         }
 
         // Check for waiting state (4/5 in a row)
-        this.updateWaitingBoard(room);
+        const newWaitingEntries = this.updateWaitingBoard(room);
 
         await this.roomManager.update(roomId, room);
 
-        return { success: true, data: { hasWaitingUpdate: true } };
+        return { success: true, data: { hasWaitingUpdate: true, newWaitingEntries } };
     }
 
     /**
@@ -730,9 +731,14 @@ export class RoomGameService {
         return -1;
     }
 
-    private updateWaitingBoard(room: RoomState): void {
-        if (!room.game) return;
+    /**
+     * Update waiting board and return NEW entries that need notification
+     * Returns only entries that haven't been notified before
+     */
+    private updateWaitingBoard(room: RoomState): { playerId: string; playerName: string; waitingNumbers: number[]; row: number }[] {
+        if (!room.game) return [];
 
+        const newEntries: { playerId: string; playerName: string; waitingNumbers: number[]; row: number }[] = [];
         room.game.waitingBoard = [];
 
         for (const player of room.players) {
@@ -754,14 +760,24 @@ export class RoomGameService {
 
                 // 4 marked, 1 waiting = waiting state
                 if (markedCount === 4 && waitingNumbers.length === 1) {
-                    room.game.waitingBoard.push({
+                    const entry = {
                         playerId: player.id,
                         playerName: player.name,
                         waitingNumbers,
                         row,
-                    });
+                    };
+                    room.game.waitingBoard.push(entry);
+
+                    // Check if this entry has been notified before
+                    const signature = `${player.id}_${row}_${waitingNumbers[0]}`;
+                    if (!room.game.notifiedEntries.includes(signature)) {
+                        room.game.notifiedEntries.push(signature);
+                        newEntries.push(entry);
+                    }
                 }
             }
         }
+
+        return newEntries;
     }
 }

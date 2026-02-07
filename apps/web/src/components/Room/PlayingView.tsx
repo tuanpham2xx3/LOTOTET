@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { TicketGrid } from '@/components/Ticket';
 import { CurrentNumber, WaitingBoard } from '@/components/Game';
 import { cn, vibrate, formatNumber } from '@/lib/utils';
-import type { RoomState, Player } from '@lototet/shared';
+import { useNewWaitingEntries, useClearNewWaitingEntries } from '@/stores/gameStore';
+import type { RoomState, Player, WaitingState } from '@lototet/shared';
 
 interface PlayingViewProps {
     roomState: RoomState;
@@ -44,9 +45,11 @@ export function PlayingView({
     // Track last auto-responded turn to prevent double responses
     const lastAutoRespondedTurnRef = useRef<number | null>(null);
 
-    // Toast state for "Sắp BINGO" notification
-    const [showWaitingToast, setShowWaitingToast] = useState(false);
-    const waitingToastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // Toast state for "Sắp BINGO" notification - using entries from store
+    const newWaitingEntries = useNewWaitingEntries();
+    const clearNewWaitingEntries = useClearNewWaitingEntries();
+    const [toastEntries, setToastEntries] = useState<WaitingState[]>([]);
+    const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Track last played audio number to avoid replaying
     const lastPlayedNumberRef = useRef<number | null>(null);
@@ -62,30 +65,36 @@ export function PlayingView({
         }
     }, [currentTurn?.number]);
 
-    // Show toast when waiting board updates
+    // Show toast when new entries arrive from store
     useEffect(() => {
-        if (game?.waitingBoard && game.waitingBoard.length > 0) {
-            setShowWaitingToast(true);
+        if (newWaitingEntries.length > 0) {
+            // Show these entries as toast
+            setToastEntries(newWaitingEntries);
+
+            // Clear from store immediately
+            clearNewWaitingEntries();
 
             // Clear existing timeout
-            if (waitingToastTimeoutRef.current) {
-                clearTimeout(waitingToastTimeoutRef.current);
+            if (toastTimeoutRef.current) {
+                clearTimeout(toastTimeoutRef.current);
             }
 
-            // Hide after 5 seconds
-            waitingToastTimeoutRef.current = setTimeout(() => {
-                setShowWaitingToast(false);
+            // Hide toast after 5 seconds
+            toastTimeoutRef.current = setTimeout(() => {
+                setToastEntries([]);
+                toastTimeoutRef.current = null;
             }, 5000);
-        } else {
-            setShowWaitingToast(false);
         }
+    }, [newWaitingEntries, clearNewWaitingEntries]);
 
+    // Cleanup timeout on unmount only
+    useEffect(() => {
         return () => {
-            if (waitingToastTimeoutRef.current) {
-                clearTimeout(waitingToastTimeoutRef.current);
+            if (toastTimeoutRef.current) {
+                clearTimeout(toastTimeoutRef.current);
             }
         };
-    }, [game?.waitingBoard]);
+    }, []);
 
     // Auto-respond "noNumber" if player doesn't have the current number
     useEffect(() => {
@@ -265,13 +274,12 @@ export function PlayingView({
             </div>
 
             {/* Toast Notification - Top Left (below header) - OUTSIDE animated div */}
-            {showWaitingToast && game?.waitingBoard && game.waitingBoard.length > 0 && (
+            {toastEntries.length > 0 && (
                 <div
                     className="fixed top-16 left-4 z-40 max-w-sm animate-fadeInDown"
-                    onClick={() => setShowWaitingToast(false)}
                 >
                     <div className="space-y-2">
-                        {game.waitingBoard.slice(0, 3).map((entry, idx) => (
+                        {toastEntries.slice(0, 3).map((entry, idx) => (
                             <div
                                 key={idx}
                                 className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg"
@@ -295,7 +303,7 @@ export function PlayingView({
                                 </div>
                             </div>
                         ))}
-                        {game.waitingBoard.length > 3 && (
+                        {toastEntries.length > 3 && (
                             <div
                                 className="text-xs text-amber-200/60 text-center py-1.5 px-3 rounded-lg"
                                 style={{
@@ -303,7 +311,7 @@ export function PlayingView({
                                     border: '1px solid rgba(212, 160, 0, 0.5)',
                                 }}
                             >
-                                +{game.waitingBoard.length - 3} người khác
+                                +{toastEntries.length - 3} người khác
                             </div>
                         )}
                     </div>
