@@ -88,6 +88,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     // Queue mechanism to handle race condition when multiple players respond simultaneously
     // Key: roomId, Value: timeout handle for debounced draw check
     private pendingDrawChecks: Map<string, NodeJS.Timeout> = new Map();
+    // Track rooms currently executing draw check to prevent concurrent execution
+    private drawCheckInProgress: Set<string> = new Set();
     private readonly DRAW_CHECK_DELAY_MS = 100; // Wait 100ms to collect all responses
 
     constructor(
@@ -980,42 +982,73 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
      * Execute the actual draw check after debounce delay
      */
     private async executeDrawCheck(roomId: string) {
-        const room = await this.roomService.getRoom(roomId);
-        this.logger.debug(`executeDrawCheck: roomId=${roomId}, turnId=${room?.game?.turnId}, phase=${room?.phase}`);
-
-        if (!room?.game || room.game.turnId === 0) {
-            this.logger.debug(`executeDrawCheck: Skipping - no game or turnId is 0`);
+        // Prevent concurrent execution for the same room
+        if (this.drawCheckInProgress.has(roomId)) {
+            this.logger.debug(`executeDrawCheck: Already in progress for room ${roomId}, skipping`);
             return;
         }
+        this.drawCheckInProgress.add(roomId);
 
-        const pendingPlayerIds = this.roomService.getPendingPlayers(room);
-        this.logger.debug(`executeDrawCheck: pendingPlayerIds=${JSON.stringify(pendingPlayerIds)}, players=${JSON.stringify(room.players.map(p => ({ id: p.id, name: p.name, respondedTurnId: p.respondedTurnId })))}`);
+        try {
+            const room = await this.roomService.getRoom(roomId);
+            this.logger.debug(`executeDrawCheck: roomId=${roomId}, turnId=${room?.game?.turnId}, phase=${room?.phase}`);
 
-        if (pendingPlayerIds.length === 0) {
-            this.logger.debug(`executeDrawCheck: All players responded, auto-drawing next number`);
-
-            // Check if ALL players responded with NO_NUMBER
-            const allNoNumber = room.players.every(p => room.game!.turnResponses[p.id] === 'NO_NUMBER');
-
-            // Delay before drawing: 2s if all NO_NUMBER, 1s otherwise
-            const delayMs = allNoNumber ? 2000 : 1000;
-            this.logger.debug(`executeDrawCheck: Waiting ${delayMs}ms before auto-draw (allNoNumber=${allNoNumber})`);
-            await this.delay(delayMs);
-
-            // All players responded, auto-draw next number
-            const drawResult = await this.roomService.autoDrawNumber(roomId);
-            this.logger.debug(`executeDrawCheck: drawResult success=${drawResult.success}`);
-            if (drawResult.success) {
-                // Emit turn:new to all players
-                this.server.to(roomId).emit('turn:new', {
-                    turnId: drawResult.data.turnId,
-                    number: drawResult.data.number,
-                });
-                // Broadcast updated room state
-                await this.broadcastRoomState(roomId);
+            if (!room?.game || room.game.turnId === 0) {
+                this.logger.debug(`executeDrawCheck: Skipping - no game or turnId is 0`);
+                return;
             }
-        } else {
-            this.logger.debug(`executeDrawCheck: Still waiting for ${pendingPlayerIds.length} players`);
+
+            const currentTurnId = room.game.turnId;
+            const pendingPlayerIds = this.roomService.getPendingPlayers(room);
+            this.logger.debug(`executeDrawCheck: pendingPlayerIds=${JSON.stringify(pendingPlayerIds)}, turnResponses=${JSON.stringify(room.game.turnResponses)}, players=${JSON.stringify(room.players.map(p => ({ id: p.id, name: p.name, respondedTurnId: p.respondedTurnId })))}`);
+
+            if (pendingPlayerIds.length === 0) {
+                this.logger.debug(`executeDrawCheck: All players responded for turn ${currentTurnId}, preparing to auto-draw`);
+
+                // Check if ALL players responded with NO_NUMBER
+                const allNoNumber = room.players.every(p => room.game!.turnResponses[p.id] === 'NO_NUMBER');
+
+                // Delay before drawing: 2s if all NO_NUMBER, 1s otherwise
+                const delayMs = allNoNumber ? 2000 : 1000;
+                this.logger.debug(`executeDrawCheck: Waiting ${delayMs}ms before auto-draw (allNoNumber=${allNoNumber})`);
+                await this.delay(delayMs);
+
+                // Re-verify state after delay to avoid race conditions
+                const roomAfterDelay = await this.roomService.getRoom(roomId);
+                this.logger.debug(`executeDrawCheck: Re-verifying state after delay - phase=${roomAfterDelay?.phase}, turnId=${roomAfterDelay?.game?.turnId}`);
+
+                if (!roomAfterDelay?.game || roomAfterDelay.phase !== 'PLAYING') {
+                    this.logger.debug(`executeDrawCheck: Game ended or cancelled during delay, skipping draw`);
+                    return;
+                }
+
+                // Make sure we're still on the same turn (no other draw happened)
+                if (roomAfterDelay.game.turnId !== currentTurnId) {
+                    this.logger.debug(`executeDrawCheck: Turn already advanced (${currentTurnId} -> ${roomAfterDelay.game.turnId}), skipping draw`);
+                    return;
+                }
+
+                // All players responded, auto-draw next number
+                this.logger.debug(`executeDrawCheck: State verified, executing auto-draw for turn ${currentTurnId}`);
+                const drawResult = await this.roomService.autoDrawNumber(roomId);
+                this.logger.debug(`executeDrawCheck: drawResult success=${drawResult.success}`);
+                if (drawResult.success) {
+                    // Emit turn:new to all players
+                    this.server.to(roomId).emit('turn:new', {
+                        turnId: drawResult.data.turnId,
+                        number: drawResult.data.number,
+                    });
+                    // Broadcast updated room state
+                    await this.broadcastRoomState(roomId);
+                } else {
+                    this.logger.warn(`executeDrawCheck: autoDrawNumber failed - ${drawResult.error?.message}`);
+                }
+            } else {
+                this.logger.debug(`executeDrawCheck: Still waiting for ${pendingPlayerIds.length} players`);
+            }
+        } finally {
+            // Always release the lock
+            this.drawCheckInProgress.delete(roomId);
         }
     }
 
