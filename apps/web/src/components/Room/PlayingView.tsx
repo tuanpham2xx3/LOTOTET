@@ -53,12 +53,35 @@ export function PlayingView({
 
     // Track last played audio number to avoid replaying
     const lastPlayedNumberRef = useRef<number | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Reset audio state when component mounts (new game starts)
+    useEffect(() => {
+        // Reset the last played number when PlayingView mounts
+        lastPlayedNumberRef.current = null;
+
+        // Cleanup any playing audio when component unmounts
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+            lastPlayedNumberRef.current = null;
+        };
+    }, []);
 
     // Play audio when new number is drawn
     useEffect(() => {
         if (currentTurn?.number && currentTurn.number !== lastPlayedNumberRef.current) {
+            // Stop any currently playing audio first
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+
             lastPlayedNumberRef.current = currentTurn.number;
             const audio = new Audio(`/nums_audio/${currentTurn.number}.wav`);
+            audioRef.current = audio;
             audio.play().catch(() => {
                 // Silent fail for audio autoplay restrictions
             });
