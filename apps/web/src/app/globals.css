@@ -104,16 +104,17 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: rgba(139, 0, 0, 0.3);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
+  background: linear-gradient(180deg, #d4a000 0%, #b8860b 100%);
   border-radius: 4px;
+  border: 1px solid rgba(139, 0, 0, 0.5);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: linear-gradient(180deg, #ffc107 0%, #d4a000 100%);
 }
 
 /* ========================
