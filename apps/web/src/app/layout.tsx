@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import BackgroundMusic from '@/components/BackgroundMusic';
+import ClientLayout from '@/components/ClientLayout';
 
 export const metadata: Metadata = {
   title: 'LOTOTET - Game Lô Tô Online',
@@ -31,8 +32,12 @@ export default function RootLayout({
       </head>
       <body className="antialiased" style={{ fontFamily: 'Inter, sans-serif' }}>
         <BackgroundMusic />
-        {children}
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );
 }
+
+

@@ -40,7 +40,7 @@ export function LoadingOverlay({ text }: { text?: string }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div
-                className="p-8 rounded-xl text-center"
+                className="p-8 text-center w-48 h-48 flex flex-col items-center justify-center rounded-lg"
                 style={{
                     background: 'linear-gradient(180deg, rgba(139, 0, 0, 0.95) 0%, rgba(92, 0, 0, 0.98) 100%)',
                     border: '3px solid #d4a000',
