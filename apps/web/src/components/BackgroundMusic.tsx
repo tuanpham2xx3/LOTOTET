@@ -49,7 +49,7 @@ export default function BackgroundMusic() {
                 ref={audioRef}
                 src="/music_background.mp3"
                 loop
-                preload="auto"
+                preload="none"
             />
             <button
                 onClick={toggleMusic}

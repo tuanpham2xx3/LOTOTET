@@ -34,8 +34,11 @@ export function getSocket(url?: string): TypedSocket {
     if (!socket) {
         currentSocketUrl = targetUrl;
         socket = io(targetUrl, {
-            transports: ['websocket'],
+            transports: ['websocket', 'polling'], // Polling fallback for Safari iOS
             autoConnect: false,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000, // Longer timeout for slower connections
         }) as TypedSocket;
     }
     return socket;

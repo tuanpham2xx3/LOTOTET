@@ -29,10 +29,16 @@ export function TicketCell({
             className={cn(
                 // Base styles
                 'relative flex items-center justify-center transition-all duration-200 overflow-hidden',
-                // Responsive sizing - larger cells
-                'w-8 h-8 text-sm',
-                'sm:w-9 sm:h-9 sm:text-base',
-                'md:w-10 md:h-10',
+                // Responsive sizing for all iPhone models
+                // Base (iPhone SE/Mini 375px): 28px cells
+                'w-7 h-7 text-[11px]',
+                // xs (376px+, iPhone 12/13/14/15/16): 32px cells  
+                'xs:w-8 xs:h-8 xs:text-xs',
+                // sm (640px+, tablets): 36px cells
+                'sm:w-9 sm:h-9 sm:text-sm',
+                // md (768px+): 40px cells
+                'md:w-10 md:h-10 md:text-base',
+                // lg (1024px+): 44px cells
                 'lg:w-11 lg:h-11 lg:text-lg',
                 // Font
                 'font-bold',

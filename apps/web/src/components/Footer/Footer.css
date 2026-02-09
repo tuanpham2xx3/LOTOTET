@@ -1,0 +1,89 @@
+/* ========================
+   Footer - Traditional Vietnamese Style
+   ======================== */
+
+.footer-traditional {
+    width: 100%;
+    padding: 20px 16px 24px;
+    background: rgba(74, 4, 4, 0.85);
+    border-top: 2px solid #d4a000;
+    text-align: center;
+}
+
+/* Navigation Links */
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.footer-link {
+    color: #ffd700;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 4px 8px;
+}
+
+.footer-link:hover {
+    color: #fff8e1;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.footer-divider {
+    color: #d4a000;
+    opacity: 0.6;
+    font-size: 14px;
+    user-select: none;
+}
+
+/* Copyright */
+.footer-copyright {
+    color: #ffd700;
+    font-size: 13px;
+    font-weight: 400;
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* ========================
+   Mobile Responsive
+   ======================== */
+@media (max-width: 480px) {
+    .footer-traditional {
+        padding: 16px 12px 20px;
+    }
+
+    .footer-links {
+        gap: 4px;
+    }
+
+    .footer-link {
+        font-size: 12px;
+        padding: 4px 6px;
+    }
+
+    .footer-divider {
+        font-size: 12px;
+    }
+
+    .footer-copyright {
+        font-size: 11px;
+    }
+}
+
+/* Very small screens - stack links vertically */
+@media (max-width: 360px) {
+    .footer-links {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .footer-divider {
+        display: none;
+    }
+}

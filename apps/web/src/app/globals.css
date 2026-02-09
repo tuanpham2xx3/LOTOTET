@@ -51,7 +51,8 @@ body {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-attachment: scroll;
+  /* 'fixed' causes lag on Safari iOS */
   color: var(--text-primary);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
@@ -377,3 +378,24 @@ input[type="number"]::-webkit-inner-spin-button {
     @apply block text-sm text-slate-400 mb-1;
   }
 }
+
+/* ========================
+   iPhone Screen Widths Reference (CSS pixels)
+   ========================
+   
+   Tailwind breakpoints used:
+   - Base (< 375px): iPhone SE, Mini - 28px cells (w-7)
+   - xs (375px+): iPhone X to 17 - 32px cells (w-8)  
+   - sm (640px+): tablets - 36px cells (w-9)
+   - md (768px+): larger tablets - 40px cells (w-10)
+   - lg (1024px+): desktops - 44px cells (w-11)
+
+   iPhone width reference:
+   - iPhone X/XS/11 Pro/12 Mini/13 Mini: 375px
+   - iPhone 12/12 Pro/13/13 Pro/14/14 Pro: 390px
+   - iPhone 15/15 Pro/16/16 Pro: 393px
+   - iPhone XR/11/XS Max/11 Pro Max: 414px
+   - iPhone 12 Pro Max/13 Pro Max/14 Plus/14 Pro Max: 428px
+   - iPhone 15 Plus/15 Pro Max/16 Plus/16 Pro Max/17: 430px
+   - iPhone 17 Pro Max (estimated): 440px
+   ======================== */
